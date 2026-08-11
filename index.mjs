@@ -59,7 +59,7 @@ attachWebSocket(httpServer, (conn) => {
     if (msg.t === "create") {
       if (player) return;
       const code = makeCode();
-      room = new Tournament(code, { includeVectorStrike: !!msg.withVectorStrike });
+      room = new Tournament(code, { games: msg.games });
       rooms.set(code, room);
       player = room.addPlayer(msg.name || name, conn);
       conn.sendJSON({ t: "joined", code, id: player.id, host: true });
@@ -82,10 +82,39 @@ attachWebSocket(httpServer, (conn) => {
     if (!room || !player) return;
 
     if (msg.t === "ready") { room.setReady(player, msg.value !== false); return; }
+    if (msg.t === "setGames") { room.setGames(player, msg.games); return; }
     if (msg.t === "start") { room.start(player); return; }
     if (msg.t === "score") { room.submitScore(player, msg.score); return; }
     if (msg.t === "standDown") { room.standDown(player); return; }
     if (msg.t === "vote") { room.castVote(player, Number(msg.value)); return; }
+
+    // ——— VECTOR STRIKE CANLI MAÇ ———
+    if (msg.t === "vs") {
+      if (msg.a === "join") {
+        const mp = room.matchJoin(player);
+        if (mp) conn.sendJSON({ t: "vs", a: "joined", id: mp.id, tick: 30 });
+        else conn.sendJSON({ t: "vs", a: "error", reason: "MAÇ AÇIK DEĞİL" });
+        return;
+      }
+      if (msg.a === "leave") { room.matchLeave(player); return; }
+      if (msg.a === "in") { room.matchInput(player, msg); return; }
+      return;
+    }
+
+    // ——— CANLI KANAL ———
+    // Oyunların birbirini görmesi için hafif, doğrulanmayan yayın.
+    // Sunucu içeriğe karışmaz; sadece odadaki DİĞER oyunculara iletir.
+    // Skor/sıralama bu kanaldan ETKİLENMEZ (onlar hâlâ otoriter).
+    if (msg.t === "live") {
+      const payload = JSON.stringify({
+        t: "live", from: player.id, name: player.name, d: msg.d,
+      });
+      for (const other of room.players.values()) {
+        if (other.id === player.id) continue;
+        if (other.conn.open) other.conn.send(payload);
+      }
+      return;
+    }
     if (msg.t === "restart") { room.restart(player); return; }
     if (msg.t === "leave") {
       room.removePlayer(player.id);
@@ -97,6 +126,7 @@ attachWebSocket(httpServer, (conn) => {
 
   conn.onClose = () => {
     if (room && player) {
+      try { room.matchLeave(player); } catch { /* yut */ }
       room.removePlayer(player.id);
       if (room.playerCount === 0) room.emptySince = Date.now();
     }
@@ -125,6 +155,20 @@ setInterval(() => {
     for (const p of room.players.values()) if (p.conn.open) p.conn.send(payload);
   }
 }, TICK_MS);
+
+// Vector Strike canlı maçları 30 Hz'de ilerler ve yalnızca maçtaki oyunculara yayınlanır.
+setInterval(() => {
+  for (const room of rooms.values()) {
+    if (!room.match || room.matchPlayers.size === 0) continue;
+    const snap = room.stepMatch();
+    if (!snap) continue;
+    const payload = JSON.stringify({ t: "vs", a: "state", s: snap });
+    for (const [tid] of room.matchPlayers) {
+      const p = room.players.get(tid);
+      if (p && p.conn.open) p.conn.send(payload);
+    }
+  }
+}, 1000 / 30);
 
 setInterval(() => {
   for (const room of rooms.values()) {

@@ -1,6 +1,7 @@
 // ARCA ARCADE — turnuva odası.
 // Model: herkes aynı tohumla aynı oyunu oynar, en yüksek skor turu kazanır.
 // Tur kazananı 1 puan alır. 4 tur sonunda en çok puan toplayan turnuvayı kazanır.
+import { Match } from "./match.mjs";
 
 export const ROUNDS = [
   { game: "highway-run", name: "HIGHWAY RUN", limitSec: 180, metric: "EN UZUN MESAFE" },
@@ -26,20 +27,100 @@ const RESULT_SECONDS = 12;      // tur sonrası tablo süresi
 const VOTE_SECONDS = 20;        // oylama süresi
 const ROUND_GRACE_MS = 15000;   // herkes bitirmezse bekleme payı
 
+/** Verilen oyun kimliklerini geçerli tur nesnelerine çevirir (sıra korunur). */
+function resolveRounds(games) {
+  if (!Array.isArray(games)) return [];
+  const out = [];
+  for (const id of games) {
+    const found = ROUNDS.find((r) => r.game === id);
+    if (found && !out.includes(found)) out.push(found);
+  }
+  return out;
+}
+
+/** Oda kurulurken: geçerli liste yoksa hepsini oyna. */
+function pickRounds(games) {
+  const out = resolveRounds(games);
+  return out.length ? out : ROUNDS.slice();
+}
+
 export class Tournament {
   constructor(code, opts = {}) {
     this.code = code;
+    this.allRounds = ROUNDS;
     this.players = new Map();      // id -> player
     this.nextId = 1;
     this.state = "lobby";          // lobby | playing | result | finished
     this.roundIndex = -1;
     this.seed = 0;
-    this.rounds = ROUNDS.filter((r) => (opts.includeVectorStrike ? true : !r.optional));
+    this.rounds = pickRounds(opts.games);
     this.roundStartedAt = 0;
     this.resultUntil = 0;
     this.lastRoundTable = null;
     this.events = [];
     this.emptySince = null;
+    this.match = null;             // Vector Strike canlı maçı (PvP seçilirse)
+    this.matchPlayers = new Map(); // turnuva oyuncu id -> maç oyuncusu
+  }
+
+  // ——— VECTOR STRIKE CANLI MAÇ ———
+  ensureMatch() {
+    if (!this.match) {
+      this.match = new Match(this.code);
+      this.match.phase = "running";
+      this.match.timeLeft = 9999;   // süreyi turnuva turu belirler
+    }
+    return this.match;
+  }
+
+  matchJoin(p) {
+    if (this.state !== "playing") return null;
+    const round = this.rounds[this.roundIndex];
+    if (!round || round.game !== "vector-strike") return null;
+    const match = this.ensureMatch();
+    const existing = this.matchPlayers.get(p.id);
+    if (existing && match.players.has(existing.id)) return existing;
+    const stub = { open: true, send() {}, sendJSON() {} };
+    const mp = match.addPlayer(p.name, stub);
+    match.phase = "running";
+    this.matchPlayers.set(p.id, mp);
+    this.events.push({ t: "vsJoin", name: p.name });
+    return mp;
+  }
+
+  matchInput(p, msg) {
+    const mp = this.matchPlayers.get(p.id);
+    if (!mp || !this.match) return;
+    this.match.applyInput(mp, msg);
+  }
+
+  matchLeave(p) {
+    const mp = this.matchPlayers.get(p.id);
+    if (!mp || !this.match) return;
+    this.match.removePlayer(mp.id);
+    this.matchPlayers.delete(p.id);
+  }
+
+  /** 30 Hz'de çağrılır; canlı maç varsa ilerletir ve anlık durumu döndürür. */
+  stepMatch() {
+    if (!this.match || this.matchPlayers.size === 0) return null;
+    if (this.state !== "playing") return null;
+    return this.match.step();
+  }
+
+  /** PvP oynayanların eleme sayısını tur skoru olarak yaz. */
+  harvestMatchScores() {
+    if (!this.match) return;
+    for (const [tid, mp] of this.matchPlayers) {
+      const player = this.players.get(tid);
+      const live = this.match.players.get(mp.id);
+      if (!player || !live) continue;
+      const kills = live.score ?? 0;
+      if (player.score === null || kills > player.score) player.score = kills;
+      player.attempts += 1;
+    }
+    this.match = null;
+    this.matchPlayers.clear();
   }
 
   get playerCount() { return this.players.size; }
@@ -77,6 +158,18 @@ export class Tournament {
     }
   }
 
+  /** Ev sahibi lobide hangi oyunların oynanacağını seçer. */
+  setGames(p, games) {
+    if (!p.host) return;
+    if (this.state !== "lobby") return;
+    // Burada varsayılana DÜŞÜLMEZ: geçersiz/boş istek yok sayılır,
+    // yoksa boş liste göndermek seçimi sessizce sıfırlardı.
+    const next = resolveRounds(games);
+    if (!next.length) return;
+    this.rounds = next;
+    this.events.push({ t: "games", list: next.map((r) => r.game) });
+  }
+
   setReady(p, ready) {
     if (this.state !== "lobby" && this.state !== "result") return;
     p.ready = !!ready;
@@ -100,6 +193,8 @@ export class Tournament {
       pl.score = null; pl.attempts = 0; pl.done = false; pl.ready = false; pl.vote = null;
     }
     this.roundOption = null;
+    this.match = null;
+    this.matchPlayers.clear();
     if (round.vote) {
       this.state = "vote";
       this.voteUntil = Date.now() + VOTE_SECONDS * 1000;
@@ -173,6 +268,7 @@ export class Tournament {
 
   closeRound() {
     if (this.state !== "playing") return;
+    this.harvestMatchScores();
     const table = [...this.players.values()]
       .map((pl) => ({ id: pl.id, name: pl.name, score: pl.score ?? 0 }))
       .sort((a, b) => b.score - a.score);
@@ -262,6 +358,8 @@ export class Tournament {
       state: this.state,
       roundIndex: this.roundIndex,
       roundCount: this.rounds.length,
+      catalog: ROUNDS.map((r) => ({ game: r.game, name: r.name, metric: r.metric })),
+      games: this.rounds.map((r) => r.game),
       round: round ? { game: round.game, name: round.name, limitSec: round.limitSec } : null,
       seed: this.seed,
       timeLeft: this.state === "playing" && round
