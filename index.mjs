@@ -3,13 +3,25 @@
 import { createServer } from "node:http";
 import { attachWebSocket } from "./ws.mjs";
 import { Tournament } from "./tournament.mjs";
+import { Match } from "./match.mjs";
 
 const PORT = Number(process.env.PORT || 8080);
 const TICK_MS = 250;               // turnuva mantığı hızlı tick istemez
 const IDLE_ROOM_MS = 10 * 60_000;
 const CLIENT_TIMEOUT_MS = 60_000;
 
-const rooms = new Map();
+const rooms = new Map();       // turnuva odaları
+const arenas = new Map();      // bağımsız Vector Strike odaları (kod -> Match)
+
+function makeArenaCode() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code;
+  do {
+    code = "";
+    for (let i = 0; i < 4; i++) code += alphabet[Math.floor(Math.random() * alphabet.length)];
+  } while (arenas.has(code) || rooms.has(code));
+  return code;
+}
 
 function makeCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -27,8 +39,9 @@ const httpServer = createServer((req, res) => {
   if (url.pathname === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({
-      ok: true, rooms: rooms.size,
-      players: [...rooms.values()].reduce((n, r) => n + r.playerCount, 0),
+      ok: true, rooms: rooms.size, arenas: arenas.size,
+      players: [...rooms.values()].reduce((n, r) => n + r.playerCount, 0)
+             + [...arenas.values()].reduce((n, m) => n + m.players.size, 0),
     }));
     return;
   }
@@ -40,6 +53,8 @@ attachWebSocket(httpServer, (conn) => {
   let room = null;
   let player = null;
   let name = "PLAYER";
+  let arena = null;        // bağımsız Vector Strike odası
+  let arenaPlayer = null;
 
   const fail = (reason) => conn.sendJSON({ t: "error", reason });
 
@@ -53,6 +68,45 @@ attachWebSocket(httpServer, (conn) => {
     if (msg.t === "hello") {
       name = String(msg.name || "PLAYER").slice(0, 14);
       conn.sendJSON({ t: "hello-ok", name });
+      return;
+    }
+
+    // ——— BAĞIMSIZ VECTOR STRIKE ARENASI ———
+    // Kabuk turnuvası olmadan, kendi oda koduyla doğrudan maç.
+    if (msg.t === "arena") {
+      if (msg.a === "create") {
+        if (arenaPlayer) return;
+        const code = makeArenaCode();
+        arena = new Match(code);
+        arena.phase = "running";
+        arena.timeLeft = 9999;
+        arena.emptySince = null;
+        arenas.set(code, arena);
+        arenaPlayer = arena.addPlayer(msg.name || name, conn);
+        conn.sendJSON({ t: "arena", a: "joined", code, id: arenaPlayer.id, tick: 30 });
+        return;
+      }
+      if (msg.a === "join") {
+        if (arenaPlayer) return;
+        const code = String(msg.code || "").toUpperCase().trim();
+        const target = arenas.get(code);
+        if (!target) { conn.sendJSON({ t: "arena", a: "error", reason: "ARENA BULUNAMADI" }); return; }
+        if (target.players.size >= 8) { conn.sendJSON({ t: "arena", a: "error", reason: "ARENA DOLU" }); return; }
+        arena = target;
+        arena.phase = "running";
+        arenaPlayer = arena.addPlayer(msg.name || name, conn);
+        conn.sendJSON({ t: "arena", a: "joined", code, id: arenaPlayer.id, tick: 30 });
+        return;
+      }
+      if (msg.a === "in") {
+        if (arena && arenaPlayer) arena.applyInput(arenaPlayer, msg);
+        return;
+      }
+      if (msg.a === "leave") {
+        if (arena && arenaPlayer) arena.removePlayer(arenaPlayer.id);
+        arena = null; arenaPlayer = null;
+        return;
+      }
       return;
     }
 
@@ -125,6 +179,11 @@ attachWebSocket(httpServer, (conn) => {
   };
 
   conn.onClose = () => {
+    if (arena && arenaPlayer) {
+      arena.removePlayer(arenaPlayer.id);
+      if (arena.players.size === 0) arena.emptySince = Date.now();
+      arena = null; arenaPlayer = null;
+    }
     if (room && player) {
       try { room.matchLeave(player); } catch { /* yut */ }
       room.removePlayer(player.id);
@@ -155,6 +214,22 @@ setInterval(() => {
     for (const p of room.players.values()) if (p.conn.open) p.conn.send(payload);
   }
 }, TICK_MS);
+
+// Bağımsız arenalar 30 Hz'de ilerler
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, m] of arenas) {
+    if (m.players.size === 0) {
+      if (!m.emptySince) m.emptySince = now;
+      if (now - m.emptySince > 60_000) arenas.delete(code);
+      continue;
+    }
+    m.emptySince = null;
+    const snap = m.step();
+    const payload = JSON.stringify({ t: "arena", a: "state", s: snap });
+    for (const p of m.players.values()) if (p.conn.open) p.conn.send(payload);
+  }
+}, 1000 / 30);
 
 // Vector Strike canlı maçları 30 Hz'de ilerler ve yalnızca maçtaki oyunculara yayınlanır.
 setInterval(() => {
