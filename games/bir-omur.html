@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bir Ömür</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Nunito:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#efe7d8; --paper:#fbf7ef; --paper2:#f4ecdc; --ink:#2b2833; --mute:#7c7468; --line:#e3d8c4;
+  --accent:#e2583e; --accent2:#c9432b; --red:#e04f4f; --yellow:#e9a93a; --blue:#3b6fd8; --purple:#9a5bd6; --green:#2f9e6e;
+  --gold:#fff1c7; --shadow:0 6px 18px rgba(60,40,10,.12);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16151b; --paper:#211f27; --paper2:#2a2731; --ink:#ece6da; --mute:#9d95a6; --line:#35313d;
+    --gold:#3d3420; --shadow:0 6px 18px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16151b; --paper:#211f27; --paper2:#2a2731; --ink:#ece6da; --mute:#9d95a6; --line:#35313d;
+  --gold:#3d3420; --shadow:0 6px 18px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Nunito,system-ui,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.app{max-width:520px;margin:0 auto;height:100%;display:flex;flex-direction:column;position:relative}
+.shake{animation:shake .35s}
+@keyframes shake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}}
+
+/* header */
+.head{padding:14px 16px 10px;background:var(--paper);border-bottom:2px dashed var(--line);box-shadow:var(--shadow);z-index:2}
+.who{display:flex;align-items:center;gap:12px}
+.ava{width:56px;height:56px;border-radius:18px;background:var(--paper2);display:grid;place-items:center;font-size:34px;flex:none}
+.who .nm{font-family:Caveat,cursive;font-size:30px;line-height:1;font-weight:700}
+.who .st{color:var(--mute);font-size:13px;font-weight:600;margin-top:3px}
+.agebox{margin-left:auto;text-align:center}
+.agebox b{display:block;font-size:30px;font-weight:900;line-height:1}
+.agebox span{font-size:11px;color:var(--mute);font-weight:800;letter-spacing:.08em}
+.pop{animation:pop .35s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:12px}
+.stat{font-size:12px;font-weight:800}
+.stat .lb{display:flex;justify-content:space-between;margin-bottom:3px}
+.bar{height:8px;border-radius:9px;background:var(--paper2);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:9px;transition:width .4s cubic-bezier(.2,.8,.2,1)}
+.stat.low .bar i{animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.35}}
+.money{margin-top:10px;display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:15px}
+.money small{color:var(--mute);font-weight:700;font-size:12px}
+
+/* journal */
+.journal{flex:1;overflow-y:auto;padding:14px 16px 20px;
+  background:repeating-linear-gradient(var(--paper) 0 31px,var(--line) 31px 32px)}
+.year{font-family:Caveat,cursive;font-size:24px;font-weight:700;color:var(--accent);margin:8px 0 2px}
+.entry{background:var(--paper);border-left:4px solid var(--line);border-radius:6px 12px 12px 6px;padding:8px 11px;margin:6px 0;font-size:14.5px;line-height:1.4;box-shadow:0 1px 0 var(--line);animation:slide .3s ease}
+@keyframes slide{from{opacity:0;transform:translateY(-6px)}}
+.entry.good{border-left-color:var(--green)}
+.entry.bad{border-left-color:var(--red)}
+.entry.gold{border-left-color:var(--yellow);background:var(--gold)}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.chip{font-size:11.5px;font-weight:800;padding:2px 7px;border-radius:20px;background:var(--paper2)}
+.chip.p{color:var(--green)} .chip.m{color:var(--red)}
+
+/* footer */
+.foot{background:var(--paper);border-top:2px dashed var(--line);padding:8px 10px calc(10px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr 96px 1fr 1fr;align-items:end;gap:4px;z-index:2}
+.tab{min-height:56px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--mute);transition:transform .15s,background .15s}
+.tab span{font-size:22px}
+.tab:active{transform:scale(.92);background:var(--paper2)}
+.ageBtn{width:84px;height:84px;margin:-30px auto 0;border-radius:50%;background:var(--accent);color:#fff;box-shadow:0 6px 0 var(--accent2),0 10px 22px rgba(226,88,62,.4);display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;font-size:13px;transition:transform .12s,box-shadow .12s}
+.ageBtn b{font-size:26px;line-height:1}
+.ageBtn:active{transform:translateY(5px);box-shadow:0 1px 0 var(--accent2),0 4px 10px rgba(226,88,62,.3)}
+.ageBtn:disabled{filter:grayscale(1);opacity:.5}
+.energy{grid-column:1/-1;text-align:center;font-size:12px;font-weight:800;color:var(--mute);margin-bottom:2px}
+.energy i{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--yellow);margin:0 2px;vertical-align:-2px;transition:.25s}
+.energy i.off{background:var(--line);transform:scale(.75)}
+
+/* sheet + modal */
+.veil{position:fixed;inset:0;background:rgba(20,15,10,.45);opacity:0;pointer-events:none;transition:opacity .22s;z-index:10}
+.veil.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:50%;bottom:0;width:min(520px,100%);max-height:78vh;overflow-y:auto;background:var(--paper);border-radius:22px 22px 0 0;padding:8px 16px calc(18px + env(safe-area-inset-bottom));transform:translate(-50%,105%);transition:transform .28s cubic-bezier(.2,.9,.25,1);z-index:11}
+.sheet.on{transform:translate(-50%,0)}
+.grab{width:44px;height:5px;border-radius:5px;background:var(--line);margin:4px auto 10px}
+.sh-t{display:flex;align-items:center;gap:8px;font-family:Caveat,cursive;font-size:30px;font-weight:700;margin-bottom:6px}
+.sh-t .x{margin-left:auto;font-family:Nunito;font-size:13px;font-weight:800;color:var(--mute);min-height:44px;padding:0 10px}
+.sh-e{font-size:12.5px;color:var(--mute);font-weight:700;margin:-4px 0 8px}
+.row{width:100%;display:flex;align-items:center;gap:12px;text-align:left;min-height:56px;padding:9px 12px;margin:6px 0;border-radius:14px;background:var(--paper2);transition:transform .15s,background .15s}
+.row:active{transform:scale(.97)}
+.row .ic{font-size:24px;width:32px;text-align:center;flex:none}
+.row .tx{flex:1;min-width:0}
+.row .tx b{display:block;font-size:15px}
+.row .tx small{display:block;color:var(--mute);font-size:12px;font-weight:700}
+.row .go{color:var(--mute);font-weight:900}
+.row.dis{opacity:.45}
+.empty{text-align:center;color:var(--mute);padding:24px 8px;font-weight:700}
+.empty span{display:block;font-size:40px;margin-bottom:6px}
+.sec{font-size:11px;font-weight:900;letter-spacing:.1em;color:var(--mute);margin:14px 2px 2px}
+
+.modal{position:fixed;left:50%;top:50%;width:min(440px,calc(100% - 32px));transform:translate(-50%,-46%) scale(.94);opacity:0;pointer-events:none;background:var(--paper);border-radius:22px;padding:20px 18px 16px;box-shadow:0 20px 50px rgba(0,0,0,.3);transition:.22s cubic-bezier(.2,.9,.25,1);z-index:13;max-height:86vh;overflow-y:auto}
+.modal.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.modal .me{font-size:48px;text-align:center}
+.modal h2{font-family:Caveat,cursive;font-size:32px;margin:2px 0 6px;text-align:center}
+.modal p{font-size:15.5px;line-height:1.5;margin:0 0 12px;text-align:center}
+.modal .chips{justify-content:center;margin:-4px 0 12px}
+.btn{display:block;width:100%;min-height:50px;border-radius:14px;background:var(--paper2);font-weight:800;font-size:15px;margin:7px 0;padding:10px 14px;transition:transform .12s,background .15s;text-align:center}
+.btn small{display:block;font-size:11.5px;color:var(--mute);font-weight:700}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--accent);color:#fff;box-shadow:0 4px 0 var(--accent2)}
+.btn.pri small{color:#ffe1d8}
+.btn:disabled{opacity:.45}
+.mveil{z-index:12}
+
+.toast{position:fixed;left:50%;top:14px;transform:translate(-50%,-140%);width:min(440px,calc(100% - 32px));background:var(--ink);color:var(--paper);padding:11px 14px;border-radius:14px;font-weight:700;font-size:14px;z-index:20;transition:transform .25s cubic-bezier(.2,.9,.25,1);box-shadow:var(--shadow)}
+.toast.on{transform:translate(-50%,0)}
+.toast .chip{background:rgba(255,255,255,.14)}
+.toast .chip.p{color:#7ee0b0}.toast .chip.m{color:#ff9a8f}
+
+/* screens */
+.screen{position:fixed;inset:0;background:var(--bg);z-index:30;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+.screen.hide{display:none}
+.card{width:min(440px,100%);background:var(--paper);border-radius:24px;padding:24px 20px;box-shadow:var(--shadow);text-align:center}
+.logo{font-family:Caveat,cursive;font-size:64px;font-weight:700;line-height:.9;color:var(--accent)}
+.tag{color:var(--mute);font-weight:700;margin:6px 0 18px}
+.inp{display:flex;gap:8px;margin-bottom:10px}
+.inp input{flex:1;min-width:0;min-height:50px;border-radius:14px;border:2px solid var(--line);background:var(--paper2);color:var(--ink);font:inherit;font-weight:800;font-size:16px;padding:0 14px;outline:none}
+.inp input:focus{border-color:var(--accent)}
+.inp button{width:50px;border-radius:14px;background:var(--paper2);font-size:22px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.seg button{min-height:48px;border-radius:14px;background:var(--paper2);font-weight:800;border:2px solid transparent;transition:.15s}
+.seg button.on{border-color:var(--accent);color:var(--accent)}
+.best{margin-top:14px;font-size:13px;color:var(--mute);font-weight:800}
+.tomb{font-size:60px}
+.epi{font-family:Caveat,cursive;font-size:28px;line-height:1.1;margin:6px 0 4px}
+.score{font-size:46px;font-weight:900;color:var(--accent);line-height:1}
+.miles{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:12px 0}
+.miles span{background:var(--paper2);border-radius:20px;padding:4px 10px;font-size:12.5px;font-weight:800}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.sum div{background:var(--paper2);border-radius:12px;padding:8px 4px;font-size:11px;font-weight:800;color:var(--mute)}
+.sum b{display:block;font-size:16px;color:var(--ink)}
+.theme{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:12px;background:var(--paper2);font-size:18px}
+canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:25}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="head">
+    <div class="who">
+      <div class="ava" id="ava">👶</div>
+      <div><div class="nm" id="nm">—</div><div class="st" id="st">—</div></div>
+      <div class="agebox"><b id="age">0</b><span>YAŞ</span></div>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="money"><span>💰 <span id="para">₺0</span></span><small id="net"></small></div>
+  </header>
+  <main class="journal" id="journal"></main>
+  <footer class="foot">
+    <div class="energy" id="energy"></div>
+    <button class="tab" data-tab="ben"><span>🙂</span>Ben</button>
+    <button class="tab" data-tab="iliski"><span>💞</span>İlişkiler</button>
+    <button class="ageBtn" id="ageBtn"><b>+1</b>YAŞ</button>
+    <button class="tab" data-tab="kariyer"><span>🎒</span>Kariyer</button>
+    <button class="tab" data-tab="para"><span>🪙</span>Para</button>
+  </footer>
+</div>
+
+<div class="veil" id="veil"></div>
+<div class="sheet" id="sheet"></div>
+<div class="veil mveil" id="mveil"></div>
+<div class="modal" id="modal"></div>
+<div class="toast" id="toast"></div>
+<canvas id="fx"></canvas>
+
+<section class="screen" id="start">
+  <div class="card">
+    <button class="theme" id="themeBtn" aria-label="Tema">🌓</button>
+    <div class="logo">Bir Ömür</div>
+    <div class="tag">Her yıl bir sayfa. Hikâyeni sen yaz.</div>
+    <div class="inp"><input id="nameIn" maxlength="14" placeholder="Adın"><button id="dice" aria-label="Rastgele isim">🎲</button></div>
+    <div class="seg"><button data-g="k">👧 Kız</button><button data-g="e" class="on">👦 Erkek</button></div>
+    <button class="btn pri" id="goBtn">Hayata başla</button>
+    <button class="btn" id="contBtn" style="display:none">Kaldığın yerden devam et</button>
+    <div class="best" id="bestTxt"></div>
+    <p style="font-size:12.5px;color:var(--mute);margin:14px 0 0;line-height:1.5">Her yıl <b>3 enerji</b> hakkın var: spor, aşk, kariyer, yatırım... Harca, sonra <b>+1 YAŞ</b>'a bas.<br>Klavye: Boşluk = yaş al · 1-4 = sekmeler</p>
+  </div>
+</section>
+
+<section class="screen hide" id="end"><div class="card" id="endCard"></div></section>
+
+<script>
+/* ---------- yardımcılar ---------- */
+const $=s=>document.querySelector(s);
+const R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const chance=p=>Math.random()<p;
+const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+function money(n){const s=n<0?'-':'';n=Math.abs(n);
+  if(n>=1e6)return s+'₺'+(n/1e6).toFixed(n>=1e7?0:1).replace('.',',')+' Mn';
+  if(n>=1e3)return s+'₺'+Math.round(n/1e3)+' bin';return s+'₺'+Math.round(n)}
+
+const MN=['Emir','Kerem','Arda','Mert','Can','Yusuf','Ege','Baran','Efe','Kaan','Alp','Onur','Burak','Selim'];
+const FN=['Elif','Zeynep','Defne','Ela','Asya','Nehir','Ada','Duru','Ece','Lina','Melis','Ayşe','Selin','Derin'];
+const SUR=['Yılmaz','Kaya','Demir','Şahin','Çelik','Aydın','Arslan','Doğan','Kılıç','Öztürk','Korkmaz','Aksoy'];
+const CITIES=['İstanbul','İzmir','Ankara','Trabzon','Eskişehir','Antalya','Mardin','Bursa','Çanakkale','Kayseri'];
+const STATS={saglik:['❤️','Sağlık','var(--red)'],mutluluk:['😊','Mutluluk','var(--yellow)'],zeka:['🧠','Zeka','var(--blue)'],karizma:['✨','Karizma','var(--purple)']};
+const FIELDS={
+  bilgisayar:{n:'Bilgisayar Müh.',min:65,y:4},tip:{n:'Tıp',min:80,y:6},hukuk:{n:'Hukuk',min:68,y:4},
+  mimarlik:{n:'Mimarlık',min:60,y:4},egitim:{n:'Öğretmenlik',min:45,y:4},isletme:{n:'İşletme',min:40,y:4},guzel:{n:'Güzel Sanatlar',min:35,y:4}};
+const JOBS=[
+  {id:'garson',n:'Garson',e:'🍽️',sal:170000,min:16},
+  {id:'kurye',n:'Kurye',e:'🛵',sal:200000,min:16},
+  {id:'muzisyen',n:'Sokak Müzisyeni',e:'🎸',sal:110000,min:16,kar:40},
+  {id:'satis',n:'Satış Danışmanı',e:'🛍️',sal:260000,min:18,lise:1,kar:35},
+  {id:'asistan',n:'Ofis Asistanı',e:'🗂️',sal:300000,min:18,lise:1,zeka:40},
+  {id:'fenomen',n:'Sosyal Medya Fenomeni',e:'📱',sal:450000,min:18,kar:75},
+  {id:'yazilim',n:'Yazılımcı',e:'💻',sal:850000,deg:'bilgisayar'},
+  {id:'doktor',n:'Doktor',e:'🩺',sal:1200000,deg:'tip'},
+  {id:'avukat',n:'Avukat',e:'⚖️',sal:780000,deg:'hukuk'},
+  {id:'mimar',n:'Mimar',e:'📐',sal:650000,deg:'mimarlik'},
+  {id:'ogretmen',n:'Öğretmen',e:'🍎',sal:420000,deg:'egitim'},
+  {id:'pazarlama',n:'Pazarlama Uzmanı',e:'📈',sal:520000,deg:'isletme'},
+  {id:'illustrator',n:'İllüstratör',e:'🎨',sal:320000,deg:'guzel'},
+];
+const LEVELS=['','Kıdemli ','Baş ','Efsane '];
+const MILES={
+  ilkis:['💼','İlk maaş'],mezun:['🎓','Diploma'],evlilik:['💍','Evet dedin'],ebeveyn:['🍼','Ebeveyn'],
+  milyoner:['💰','Milyoner'],kedi:['🐱','Bir kedinin insanı'],maraton:['🏅','Maratoncu'],dunya:['🌍','Dünya gezgini'],
+  tavan:['🏆','Zirvede'],asirlik:['🎂','Asırlık'],piyango:['🍀','Şans meleği'],ev:['🏡','Ev sahibi'],yazar:['📖','Yazar']};
+
+let S=null, modalOpen=false, sheetOpen=false, curTab=null, gender='e';
+
+/* ---------- ses ---------- */
+let AC=null;
+function tone(f,d,type='sine',v=.12,t0=0,f2){
+  try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const t=AC.currentTime+t0,o=AC.createOscillator(),g=AC.createGain();
+    o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
+    g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);
+    o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d+.02)}catch(e){}}
+function sfx(k){
+  if(k==='click')tone(880,.04,'triangle',.06);
+  else if(k==='tick'){tone(520,.08,'sine',.1);tone(780,.1,'sine',.08,.07)}
+  else if(k==='good'){tone(523,.1,'triangle');tone(784,.16,'triangle',.12,.08)}
+  else if(k==='bad'){tone(260,.25,'sawtooth',.08,0,140)}
+  else if(k==='gold'){[523,659,784,1046].forEach((f,i)=>tone(f,.18,'triangle',.11,i*.08))}
+  else if(k==='end'){[392,330,262,196].forEach((f,i)=>tone(f,.4,'sine',.1,i*.22))}
+}
+
+/* ---------- partikül ---------- */
+const cv=$('#fx'),cx=cv.getContext('2d');let parts=[],looping=false,last=0;
+function fitCv(){cv.width=innerWidth*devicePixelRatio;cv.height=innerHeight*devicePixelRatio;cx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
+addEventListener('resize',fitCv);fitCv();
+function burst(n=40,colors=['#e2583e','#e9a93a','#2f9e6e','#3b6fd8','#9a5bd6']){
+  const x=innerWidth/2,y=innerHeight*.35;
+  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=150+Math.random()*350;
+    parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-200,r:3+Math.random()*4,c:pick(colors),l:1,rot:Math.random()*6})}
+  if(!looping){looping=true;last=performance.now();requestAnimationFrame(loop)}}
+function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;cx.clearRect(0,0,innerWidth,innerHeight);
+  parts=parts.filter(p=>p.l>0);
+  for(const p of parts){p.vy+=700*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.99;p.l-=dt*.8;p.rot+=dt*8;
+    cx.save();cx.globalAlpha=Math.max(0,p.l);cx.translate(p.x,p.y);cx.rotate(p.rot);cx.fillStyle=p.c;cx.fillRect(-p.r,-p.r/2,p.r*2,p.r);cx.restore()}
+  if(parts.length)requestAnimationFrame(loop);else{looping=false;cx.clearRect(0,0,innerWidth,innerHeight)}}
+function shake(){const a=$('#app');a.classList.remove('shake');void a.offsetWidth;a.classList.add('shake')}
+
+/* ---------- çekirdek ---------- */
+function apply(d){const out=[];if(!d)return out;
+  for(const k in d){let v=Math.round(d[k]);if(!v)continue;
+    if(k==='para')S.para+=v;
+    else if(k==='perf'){if(S.job)S.job.perf=clamp(S.job.perf+v);continue}
+    else if(k==='grade'){S.grade=clamp(S.grade+v);continue}
+    else{const b=S[k];S[k]=clamp(b+v);v=S[k]-b;if(!v)continue}
+    out.push([k,v])}
+  return out}
+function chipHTML(chips){if(!chips||!chips.length)return'';
+  return '<div class="chips">'+chips.map(([k,v])=>{const sg=v>0?'+':'';
+    const label=k==='para'?sg+money(v).replace('-₺','-₺')+' 💰':sg+v+' '+STATS[k][0];
+    return `<span class="chip ${v>0?'p':'m'}">${label}</span>`}).join('')+'</div>'}
+function log(text,tone='n',chips=[]){S.log.push({a:S.age,t:text,o:tone,c:chips});if(S.log.length>400)S.log.splice(0,S.log.length-400)}
+function toneOf(chips){let s=0;for(const[k,v]of chips)s+=k==='para'?Math.sign(v)*3:v;return s>0?'good':s<0?'bad':'n'}
+function feedback(t){if(t==='good'){sfx('good');burst(14)}else if(t==='bad'){sfx('bad');shake()}else if(t==='gold'){sfx('gold');burst(60)}else sfx('click')}
+function addMile(id){if(S.miles.includes(id))return;S.miles.push(id);const[e,n]=MILES[id];
+  log(`${e} Kilometre taşı: <b>${n}</b>`,'gold');setTimeout(()=>{feedback('gold');toast(`${e} Kilometre taşı: <b>${n}</b>`)},250)}
+function famPick(rel){return S.fam.find(f=>f.rel===rel&&f.alive)}
+function avatar(){const a=S.age,k=S.g==='k';if(!S.alive)return'🪦';if(a<3)return'👶';if(a<13)return k?'👧':'👦';if(a<20)return k?'👩‍🦰':'🧑';if(a<60)return k?'👩':'👨';return k?'👵':'👴'}
+function status(){
+  if(!S.alive)return'Huzur içinde';
+  let s;const a=S.age;
+  if(S.job)s=jobTitle();else if(S.uni)s=FIELDS[S.uni.f].n+' öğrencisi';else if(S.retired)s='Emekli';
+  else if(a<3)s='Bebek';else if(a<6)s='Okul öncesi';else if(S.edu==='ilkokul')s='İlkokul öğrencisi';else if(S.edu==='lise')s='Lise öğrencisi';
+  else s='İşsiz';
+  return s+' · '+S.city}
+function jobTitle(){const j=JOBS.find(x=>x.id===S.job.id);return LEVELS[S.job.lvl]+j.n}
+function jobSal(){return Math.round(S.job.sal*Math.pow(1.3,S.job.lvl))}
+
+function newLife(name,g){
+  const wealth=pick(['dar','orta','orta','varlikli']);
+  S={name,sur:pick(SUR),g,city:pick(CITIES),wealth,age:0,energy:3,
+    saglik:R(72,95),mutluluk:R(60,85),zeka:R(25,75),karizma:R(25,75),
+    para:0,net:0,edu:'yok',grade:60,uni:null,degree:null,job:null,retired:false,pension:0,
+    partner:null,married:false,kids:[],fam:[],miles:[],used:[],log:[],hapSum:0,alive:true,
+    house:false,car:false,pet:null,lastEv:null};
+  S.fam.push({rel:'Annen',name:pick(FN),age:R(21,38),love:R(65,95),alive:true});
+  S.fam.push({rel:'Baban',name:pick(MN),age:R(23,42),love:R(55,90),alive:true});
+  if(chance(.5))S.fam.push({rel:'Kardeşin',name:pick(chance(.5)?FN:MN),age:R(1,7),love:R(40,80),alive:true});
+  const wt={dar:'dar gelirli ama sevgi dolu',orta:'orta halli',varlikli:'oldukça varlıklı'}[wealth];
+  log(`${S.city}'da, ${wt} bir ailenin ${g==='k'?'kızı':'oğlu'} olarak dünyaya geldin. Adın: <b>${name} ${S.sur}</b>.`,'good');
+  const sib=famPick('Kardeşin');if(sib)log(`Seni kıskançlıkla izleyen bir abla/abin var: ${sib.name}.`);
+  $('#start').classList.add('hide');$('#end').classList.add('hide');
+  render();save()}
+
+function save(){if(S&&S.alive)store.set('birOmur.save',JSON.stringify(S));else store.del('birOmur.save')}
+
+/* ---------- yıl döngüsü ---------- */
+function ageUp(){
+  if(!S||!S.alive||modalOpen)return;
+  closeSheet();
+  S.age++;S.energy=3;const a=S.age;sfx('tick');
+  // doğal değişimler
+  if(a<18)apply({saglik:R(0,2)});
+  if(a>40)apply({saglik:-R(0,2)});if(a>60)apply({saglik:-R(0,3)});if(a>80)apply({saglik:-R(1,3)});
+  S.mutluluk=clamp(S.mutluluk+Math.sign(55-S.mutluluk)*R(0,2));
+  if(a>55)S.karizma=clamp(S.karizma-R(0,1));
+  schoolTick(a);familyTick();loveTick();jobTick();moneyTick(a);
+  if(S.para>=1e6)addMile('milyoner');if(a>=100)addMile('asirlik');
+  S.hapSum+=S.mutluluk;
+  if(checkDeath()){render();return}
+  render(true);save();
+  const sc=scripted(a);
+  if(sc)setTimeout(()=>showEvent(sc),250);
+  else if(chance(a<3?.5:.72)){const ev=pickEvent();if(ev)setTimeout(()=>showEvent(ev),250)}
+}
+function schoolTick(a){
+  if(S.edu==='ilkokul'||S.edu==='lise')S.grade=clamp(S.grade+(S.zeka-50)/25+R(-5,5));
+  if(a===6){S.edu='ilkokul';log('🎒 İlkokula başladın. Önlüğün biraz büyük ama olsun.')}
+  if(a===14){S.edu='lise';log('🏫 Liseye başladın. Koridorlar kocaman görünüyor.')}
+  if(a===18&&S.edu==='lise'){S.edu='lisemezun';log(S.grade>70?'🎓 Liseyi parlak notlarla bitirdin!':'🎓 Liseyi bitirdin. Bitti ya, önemli olan o.','good')}
+  if(S.uni){S.uni.left--;if(S.uni.left<=0){S.degree=S.uni.f;S.edu='unimezun';log(`🎓 ${FIELDS[S.uni.f].n} bölümünden mezun oldun!`,'good',apply({mutluluk:10,zeka:4}));S.uni=null;addMile('mezun')}}
+}
+function familyTick(){
+  for(const f of S.fam){if(!f.alive)continue;f.age++;if(S.age>16)f.love=clamp(f.love-R(0,3));
+    if(f.age>62&&chance((f.age-62)*.012+.004)){f.alive=false;
+      log(`🕊️ ${f.rel.replace(/n$/,'')} ${f.name}, ${f.age} yaşında hayata gözlerini yumdu.`,'bad',apply({mutluluk:-14}));
+      if(S.wealth==='varlikli'&&f.rel!=='Kardeşin'&&S.age>=18){const m=R(400000,1800000);log(`Sana ${money(m)} miras kaldı.`,'n',apply({para:m}))}}}
+  for(const k of S.kids){k.age++;if(k.age===18)log(`🧳 Çocuğun ${k.name} üniversite için evden ayrıldı. Ev bir anda sessizleşti.`)}
+}
+function loveTick(){
+  const p=S.partner;if(!p)return;
+  p.love=clamp(p.love-R(1,5));if(S.married)apply({mutluluk:2});
+  if(p.love<15){
+    if(S.married){const loss=Math.max(0,Math.round(S.para*.3));log(`💔 ${p.name} ile boşandınız. Avukatlar bile üzüldü.`,'bad',apply({mutluluk:-15,para:-loss}))}
+    else log(`💔 ${p.name} ile yollarınız ayrıldı.`,'bad',apply({mutluluk:-10}));
+    S.partner=null;S.married=false}
+}
+function jobTick(){
+  if(!S.job)return;S.job.yrs++;S.job.perf=clamp(S.job.perf+R(-7,3));
+  if(S.job.perf<12&&chance(.5)){log(`📦 Performansın düşük diye ${jobTitle()} işinden kovuldun.`,'bad',apply({mutluluk:-12}));S.job=null}
+}
+function moneyTick(a){
+  if(a<18){S.net=0;return}
+  if(a===18){const m={dar:5000,orta:40000,varlikli:300000}[S.wealth];log(`Ailen hayata atılman için sana ${money(m)} verdi.`,'good',apply({para:m}))}
+  let inc=0,exp=0;
+  if(S.job)inc=jobSal();else if(S.retired)inc=S.pension;
+  if(S.uni)exp=S.wealth==='dar'?15000:40000;else if(a<22&&!S.job)exp=30000;else exp=S.house?60000:160000;
+  exp+=S.kids.filter(k=>k.age<18).length*60000+(S.car?25000:0);
+  S.net=inc-exp;S.para+=S.net;
+  if(S.para<0&&S.uni&&S.uni.left>0){log('🎓 Masraflarını öğrenim kredisi karşılıyor. Mezun olunca ödeyeceksin.')}
+  else if(S.para<0){S.para=Math.round(S.para*1.12);log(`💸 Borçtasın (${money(S.para)}). Faiz de büyüyor...`,'bad',apply({mutluluk:-5,saglik:-1}))}
+  if(!S.job&&!S.uni&&!S.retired&&a>=22&&a<60)apply({mutluluk:-2});
+}
+function checkDeath(){
+  let c=null;
+  if(S.saglik<=0)c=S.age>65?'yaşlılığa bağlı sağlık sorunları':'ağır bir hastalık';
+  else if(S.age>=70&&chance((S.age-70)*.018+Math.max(0,50-S.saglik)/300))c='huzur içinde, uykusunda';
+  else if(S.age>=16&&chance(.0012))c='talihsiz bir kaza';
+  else if(S.age>=118)c='inanılmaz bir yaşta, tarihe geçerek';
+  if(!c)return false;
+  S.alive=false;S.cause=c;log(`🕯️ ${S.age} yaşında ${c} nedeniyle aramızdan ayrıldın.`,'bad');
+  save();sfx('end');setTimeout(showEnd,900);return true}
+
+/* ---------- olaylar ---------- */
+const r=(m,d,o,mile)=>({m,d,o,mile});
+function scripted(a){
+  if(a===18&&S.edu==='lisemezun')return{e:'🎓',t:'Yol ayrımı',x:'Liseyi bitirdin! Şimdi ne yapacaksın?',ch:[
+    {t:'Üniversite sınavına gir',run:()=>{uniPicker(false);return 'keep'}},
+    {t:'Hemen çalışmaya başla',run:()=>r('Kollarını sıvadın. Kariyer sekmesinden iş arayabilirsin.',{karizma:2})},
+    {t:'Bir yıl ara verip kendini bul',run:()=>r('Sırt çantanla yollara düştün. Kim olduğunu biraz daha iyi biliyorsun artık.',{mutluluk:10,zeka:2})}]};
+  return null}
+const EVENTS=[
+ {id:'adim',e:'🚼',min:1,max:2,once:1,t:'Büyük an',x:'Mobilyalara tutunarak ayağa kalktın. Herkes nefesini tuttu...',ch:[
+   {t:'Bir adım daha at!',run:()=>r('İlk adımlarını attın! Annen ağladı, baban video çekti.',{saglik:2,mutluluk:5},'good')},
+   {t:'Otur ve alkış bekle',run:()=>r('Oturdun ve herkes yine de alkışladı. Doğal yıldızsın.',{karizma:3})}]},
+ {id:'kelime',e:'🗣️',min:1,max:3,once:1,t:'İlk kelime',x:'Ağzından ilk kelimen çıkmak üzere...',ch:[
+   {t:'"Anne"',run:()=>{const f=famPick('Annen');if(f)f.love=clamp(f.love+10);return r('"Anne!" dedin. Annen bunu herkese anlatacak.',{mutluluk:3})}},
+   {t:'"Baba"',run:()=>{const f=famPick('Baban');if(f)f.love=clamp(f.love+10);return r('"Baba!" dedin. Baban gururdan havalara uçtu.',{mutluluk:3})}},
+   {t:'"Simit"',run:()=>r('"Simit!" dedin. Ev kahkahadan yıkıldı.',{mutluluk:5,karizma:3})}]},
+ {id:'kedi',e:'🐱',min:5,max:75,once:1,t:'Minik misafir',x:'Sokakta titreyen bir yavru kedi buldun. Sana bakıyor.',ch:[
+   {t:'Eve götür',run:()=>{S.pet='Pamuk';return r(S.age<18?'Annen önce söylendi, sonra adını o koydu: Pamuk.':'Artık bir Pamuk\'un var. Evin efendisi o.',{mutluluk:10},'good','kedi')}},
+   {t:'Mama verip yoluna devam et',run:()=>r('Karnını doyurdun. İçin biraz rahatladı.',{mutluluk:2})}]},
+ {id:'bisiklet',e:'🚲',min:6,max:11,once:1,t:'İki teker',x:'Bisikletin yardımcı tekerlekleri artık sana küçük geliyor.',ch:[
+   {t:'Tekerlekleri çıkar!',run:()=>chance(.6)?r('Rüzgar saçlarında, özgürsün!',{mutluluk:6,karizma:2},'good'):r('Dizin kanadı ama kalkıp yine bindin.',{saglik:-6,mutluluk:-1})},
+   {t:'Babandan arkadan tutmasını iste',run:()=>r('O tuttuğunu söyledi ama aslında çoktan bırakmıştı.',{mutluluk:4})}]},
+ {id:'kalem',e:'✏️',min:7,max:13,t:'Sıra kavgası',x:'Sıra arkadaşın kalem kutunu aldı ve vermiyor.',ch:[
+   {t:'Öğretmene söyle',run:()=>r('Öğretmen kutuyu geri aldı. Sınıfta "ispiyoncu" fısıltıları...',{mutluluk:1,karizma:-2})},
+   {t:'Kendin geri al',run:()=>chance(S.karizma/100+.2)?r('Gözlerinin içine baktın, kutuyu sessizce geri verdi.',{karizma:4},'good'):r('İtiştiniz, ikiniz de müdürlüğe gittiniz.',{saglik:-3,mutluluk:-4})},
+   {t:'Boş ver',run:()=>r('Kutun gitti ama huzurun kaldı. Sayılır.',{mutluluk:-3})}]},
+ {id:'bilgi',e:'🏆',min:9,max:17,t:'Bilgi yarışması',x:'Okulun bilgi yarışmasına seçildin!',ch:[
+   {t:'Hazırlan ve katıl',run:()=>chance(S.zeka/100+.1)?r('Son soruyu sen bildin: BİRİNCİSİN!',{zeka:3,mutluluk:8,karizma:3,grade:8},'good'):r('Yarı finalde elendin ama çok şey öğrendin.',{zeka:2,mutluluk:-2})},
+   {t:'Çekil',run:()=>r('Sahne korkusu bu sefer kazandı.',{karizma:-2})}]},
+ {id:'kirma',e:'🌤️',min:8,max:17,t:'Güneşli bir sabah',x:'Hava o kadar güzel ki okulu kırmak çok cazip.',ch:[
+   {t:'Kır gitsin',run:()=>chance(.4)?r('Müdür yardımcısıyla parkta karşılaştın. Felaket.',{mutluluk:-6,grade:-6},'bad'):r('Harika bir gündü. Kimse fark etmedi.',{mutluluk:7})},
+   {t:'Okula git',run:()=>r('Sıkıcıydı ama sözlüde artı aldın.',{grade:3,zeka:1})}]},
+ {id:'parti',e:'🎉',min:15,max:28,t:'Hafta sonu partisi',x:'Arkadaşların bu hafta sonu büyük bir parti veriyor.',ch:[
+   {t:'Git, sabaha kadar dans et',run:()=>chance(.2)?r('Çok eğlendin ama ertesi gün ölü gibiydin.',{mutluluk:5,saglik:-6}):r('Gecenin yıldızı sendin!',{mutluluk:8,karizma:3},'good')},
+   {t:'Evde kalıp ders çalış',run:()=>r('Sessiz bir gece. Beynin teşekkür ediyor.',{zeka:3,mutluluk:-2})}]},
+ {id:'kopya',e:'📝',min:13,max:22,t:'Sınavda fısıltı',x:'Arkadaşın sınavda sana kopya kâğıdı uzattı.',ch:[
+   {t:'Al',run:()=>chance(.35)?r('Yakalandın! Sınavın iptal, adın kara listede.',{mutluluk:-8,karizma:-3,grade:-10},'bad'):r('Kimse fark etmedi. Ama içinde bir burukluk var.',{mutluluk:1,grade:4})},
+   {t:'Reddet',run:()=>r('Kendi bildiğinle yazdın. Dürüstlük iyi hissettirdi.',{zeka:1,karizma:1})}]},
+ {id:'not',e:'💌',min:13,max:19,t:'İsimsiz not',x:'Sırana bir not bırakılmış: "Teneffüste kantinde buluşalım mı?"',ch:[
+   {t:'Git',run:()=>chance(.6)?r('Hayatının en tatlı on dakikasıydı.',{mutluluk:10,karizma:2},'good'):r('Bir şakaymış. Gülümseyip geçtin, olgun hareket.',{mutluluk:-5})},
+   {t:'Gitme',run:()=>r('Merak seni hâlâ kemiriyor.',{mutluluk:-1})}]},
+ {id:'grup',e:'🎸',min:15,max:30,t:'Müzik grubu',x:'Bir arkadaşın grup kuruyor, sana da yer var.',ch:[
+   {t:'Katıl',run:()=>r('Garajda ilk provanız felaketti ama çok güldünüz.',{karizma:5,mutluluk:6,saglik:-1},'good')},
+   {t:'Teşekkür edip geç',run:()=>r('Belki başka bir hayatta rock yıldızısın.',{})}]},
+ {id:'yetenek',e:'🎤',min:12,max:35,t:'Yetenek yarışması',x:'Şehirde bir yetenek yarışması düzenleniyor.',ch:[
+   {t:'Sahneye çık',run:()=>chance(S.karizma/120+.1)?r('Salon ayağa kalktı! Ödülü sen aldın.',{karizma:8,mutluluk:10,para:S.age>=18?25000:0},'good'):r('Mikrofon cızırdadı, sözleri unuttun. Olur böyle şeyler.',{mutluluk:-6,karizma:-2})},
+   {t:'Seyirci kal',run:()=>r('Patlamış mısır eşliğinde güzel bir akşam.',{mutluluk:2})}]},
+ {id:'cuzdan',e:'👛',min:12,max:85,t:'Kayıp cüzdan',x:'Yolda içi dolu bir cüzdan buldun.',ch:[
+   {t:'Sahibine ulaştır',run:()=>chance(.35)?r('Sahibi o kadar sevindi ki sana ödül verdi!',{karizma:3,mutluluk:5,para:R(2000,10000)},'good'):r('Sahibi bin kere teşekkür etti. İyi insan olmak güzel.',{karizma:3,mutluluk:4})},
+   {t:'Parayı al, cüzdanı bırak',run:()=>r('Cebin doldu ama vicdanın sızlıyor.',{para:R(1500,6000),mutluluk:-4})}]},
+ {id:'borc',e:'🤝',min:20,max:70,c:()=>S.para>=50000,t:'Borç isteği',x:'Eski bir arkadaşın senden 50 bin lira borç istedi.',ch:[
+   {t:'Ver',run:()=>chance(.55)?r('Söz verdiği gün ödedi, üstüne çiçek getirdi.',{mutluluk:4,karizma:2},'good'):r('Bir daha ondan haber alamadın.',{para:-50000,mutluluk:-6},'bad')},
+   {t:'Kibarca reddet',run:()=>r('Biraz bozuldu ama anladı.',{mutluluk:-2})}]},
+ {id:'kripto',e:'🪙',min:20,max:60,c:()=>S.para>=20000,t:'"Kesin kazandırır"',x:'Biri sana adını bile duymadığın bir dijital para önerdi.',ch:[
+   {t:'Paranın dörtte birini yatır',run:()=>{const b=Math.round(S.para*.25);return chance(.3)?r('İnanılmaz! Değeri katlandı!',{para:b*R(2,5)},'good'):r('Bir sabah uyandın, coin yok olmuştu.',{para:-Math.round(b*.85),mutluluk:-6},'bad')}},
+   {t:'Uzak dur',run:()=>r('Sağduyun kazandı.',{zeka:1})}]},
+ {id:'maraton',e:'🏃',min:18,max:65,t:'Şehir maratonu',x:'Şehirde maraton var. Katılacak mısın?',ch:[
+   {t:'Katıl',run:()=>S.saglik>=60&&chance(.75)?r('Bitiş çizgisini geçtin! Madalyan boynunda.',{saglik:4,mutluluk:8},'good','maraton'):r('Yarı yolda bacakların isyan etti.',{saglik:-7,mutluluk:-2},'bad')},
+   {t:'Kenardan alkışla',run:()=>r('Koşanlara su dağıttın. O da bir katkı.',{mutluluk:1})}]},
+ {id:'dedikodu',e:'🗯️',min:19,max:65,c:()=>S.job,t:'İş yerinde dedikodu',x:'Ofiste hakkında asılsız bir dedikodu dolaşıyor.',ch:[
+   {t:'Yüzleş',run:()=>chance(S.karizma/100)?r('Sakin ve net konuştun. Herkes sana hak verdi.',{karizma:4,perf:6},'good'):r('İş daha da karıştı.',{mutluluk:-5,perf:-5})},
+   {t:'Görmezden gel',run:()=>r('Zamanla unutuldu. Ama biraz üzüldün.',{mutluluk:-3})}]},
+ {id:'teklif',e:'📨',min:24,max:58,c:()=>S.job,t:'Rakip teklif',x:'Rakip bir şirket %30 daha fazla maaş teklif etti!',ch:[
+   {t:'Kabul et',run:()=>{S.job.sal=Math.round(S.job.sal*1.3);S.job.perf=50;return r('Yeni masana yerleştin. Kahve makinesi daha iyi.',{mutluluk:5},'good')}},
+   {t:'Sadakat önemli, kal',run:()=>r('Patronun bunu duydu ve çok memnun kaldı.',{perf:10})}]},
+ {id:'yorgun',e:'🩻',min:25,max:95,t:'Garip bir yorgunluk',x:'Bir süredir hep yorgun hissediyorsun.',ch:[
+   {t:'Check-up yaptır',run:()=>r('Erken teşhis iyi geldi, tedaviye başladın.',{para:S.age>=18?-8000:0,saglik:R(4,12)},'good')},
+   {t:'Geçer canım',run:()=>chance(.5)?r('Geçmedi. Hem de hiç.',{saglik:-R(8,15)},'bad'):r('Gerçekten geçti. Bu sefer şanslıydın.',{})}]},
+ {id:'miras',e:'📜',min:25,max:80,once:1,w:.3,t:'Gizemli mektup',x:'Hiç tanımadığın uzak bir akraban sana miras bırakmış!',ch:[
+   {t:'Mirası kabul et',run:()=>r('Noterden çıkarken ellerin titriyordu.',{para:R(150000,1500000),mutluluk:6},'good')},
+   {t:'Önce borcu var mı araştır',run:()=>chance(.7)?r('Temiz çıktı, mirası aldın.',{para:R(150000,1200000),zeka:2},'good'):r('Mirasın borcu daha büyükmüş. İyi ki araştırdın!',{zeka:3})}]},
+ {id:'kurs',e:'🗺️',min:16,max:65,t:'Dil kursu indirimi',x:'Bir yabancı dil kursu yarı fiyatına inmiş.',ch:[
+   {t:'Yazıl',run:()=>r('Artık yabancı dizileri altyazısız izliyorsun (neredeyse).',{para:S.age>=18?-6000:0,zeka:5},'good')},
+   {t:'Sonra bakarım',run:()=>r('"Sonra" hiç gelmedi.',{})}]},
+ {id:'komsu',e:'🍪',min:18,max:95,t:'Yeni komşu',x:'Yeni komşun elinde bir tabak kurabiyeyle kapını çaldı.',ch:[
+   {t:'İçeri davet et',run:()=>r('Çayın yanında iki saat sohbet ettiniz. Yeni bir dost!',{mutluluk:5,karizma:2},'good')},
+   {t:'Kapıda teşekkür et',run:()=>r('Kurabiyeler harikaydı.',{mutluluk:1})}]},
+ {id:'dusme',e:'🤕',min:18,max:90,w:.5,t:'Kaygan kaldırım',x:'Islak kaldırımda ayağın kaydı ve sertçe düştün.',ch:[
+   {t:'Hastaneye git',run:()=>r('Burkulma. Birkaç hafta topalladın.',{para:-4000,saglik:-3})},
+   {t:'Aldırma',run:()=>r('Aldırmadın, o da seni aldırmadı. Ağrı aylarca sürdü.',{saglik:-R(6,10)},'bad')}]},
+ {id:'yalniz',e:'🌧️',min:25,max:85,c:()=>!S.partner,t:'Sessiz akşamlar',x:'Son zamanlarda kendini yalnız hissediyorsun.',ch:[
+   {t:'Bir terapiste git',run:()=>r('Konuşmak iyi geldi. Kendini daha iyi tanıyorsun.',{para:-5000,mutluluk:8},'good')},
+   {t:'Eski bir dostu ara',run:()=>r('Sanki hiç ayrılmamışsınız gibi konuştunuz.',{mutluluk:5})},
+   {t:'İçine kapan',run:()=>r('Günler gri geçti.',{mutluluk:-6},'bad')}]},
+ {id:'tasin',e:'🚚',min:22,max:60,t:'Yeni bir şehir?',x:`Başka bir şehirde yeni bir hayat kurma fikri aklına düştü.`,ch:[
+   {t:'Taşın!',run:()=>{const old=S.city;S.city=pick(CITIES.filter(c=>c!==old));return r(`${old}'dan ${S.city}'a taşındın. Yeni sokaklar, yeni sen.`,{para:-30000,mutluluk:R(-3,10)})}},
+   {t:'Kökler burada',run:()=>r('Kaldın. Bildiğin fırının simidi gibisi yok.',{mutluluk:1})}]},
+ {id:'ruya',e:'🥯',min:10,max:95,w:.5,t:'Tuhaf rüya',x:'Rüyanda uçan bir simit seni kovalıyordu.',ch:[
+   {t:'Rüya tabircisine sor',run:()=>r('"Bolluk bereket" dedi. Ücreti de bereketliydi.',{para:S.age>=18?-500:0,mutluluk:2})},
+   {t:'Gül geç',run:()=>r('Kahvaltıda simit yedin. İntikam.',{mutluluk:2})}]},
+ {id:'yagmur',e:'☔',min:5,max:90,t:'Ani sağanak',x:'Şemsiyesiz yağmura yakalandın.',ch:[
+   {t:'Yağmurda dans et',run:()=>chance(.3)?r('Çok eğlenceliydi... ta ki nezle olana kadar.',{mutluluk:4,saglik:-4}):r('Islandın ama hiç bu kadar özgür hissetmemiştin.',{mutluluk:6},'good')},
+   {t:'Bir saçağa sığın',run:()=>r('Yanındaki teyzeyle hava muhabbeti yaptınız.',{mutluluk:1})}]},
+ {id:'torun',e:'🧸',min:55,max:105,c:()=>S.kids.some(k=>k.age>=25),t:'Torun ziyareti',x:'Torunların hafta sonu ziyarete geldi!',ch:[
+   {t:'Masal anlat',run:()=>r('Uydurduğun ejderhalı masal ailede efsane oldu.',{mutluluk:10,karizma:1},'good')},
+   {t:'Bahçede top oyna',run:()=>r('Nefes nefese kaldın ama değdi.',{saglik:2,mutluluk:7},'good')}]},
+ {id:'ani',e:'📔',min:62,max:105,once:1,t:'Anı defteri',x:'Anılarını bir deftere yazmaya başladın.',ch:[
+   {t:'Kitap olarak yayınla',run:()=>chance(S.zeka/150+.15)?r('Kitabın beklenmedik ilgi gördü! İmza günleri bile yapıldı.',{para:R(50000,400000),karizma:5,mutluluk:8},'good','yazar'):r('Birkaç yüz kişi okudu. Hepsi çok sevdi.',{mutluluk:4})},
+   {t:'Sadece kendin için yaz',run:()=>r('Her sayfa bir teşekkür gibiydi.',{mutluluk:6})}]},
+ {id:'bahce',e:'🍅',min:55,max:100,once:1,t:'Balkon bahçesi',x:'Balkonda domates yetiştirmeyi denesen mi?',ch:[
+   {t:'Evet!',run:()=>r('İlk domatesin çirkin ama dünyanın en lezzetlisi.',{saglik:3,mutluluk:5},'good')},
+   {t:'Pazardan alırım',run:()=>r('Pazarcı seni artık adınla tanıyor.',{})}]},
+];
+function pickEvent(){
+  const el=EVENTS.filter(e=>S.age>=e.min&&S.age<=e.max&&!(e.once&&S.used.includes(e.id))&&e.id!==S.lastEv&&(!e.c||e.c()));
+  if(!el.length)return null;let tot=el.reduce((s,e)=>s+(e.w||1),0),x=Math.random()*tot;
+  for(const e of el){x-=(e.w||1);if(x<=0)return e}return el[0]}
+function showEvent(ev){
+  if(ev.id){S.lastEv=ev.id;if(ev.once)S.used.push(ev.id)}
+  showModal({e:ev.e,t:ev.t,x:typeof ev.x==='function'?ev.x():ev.x,ch:ev.ch})}
+
+/* ---------- modal ---------- */
+function showModal(o){
+  modalOpen=true;const m=$('#modal');
+  m.innerHTML=`<div class="me">${o.e}</div><h2>${o.t}</h2><p>${o.x}</p>`+
+    o.ch.map((c,i)=>`<button class="btn ${i===0&&o.ch.length===1?'pri':''}" data-i="${i}" ${c.dis?'disabled':''}>${c.t}${c.sub?`<small>${c.sub}</small>`:''}</button>`).join('');
+  m.querySelectorAll('.btn').forEach(b=>b.onclick=()=>{const c=o.ch[+b.dataset.i];const res=c.run();
+    if(res==='keep')return;if(res)outcome(res,true);else closeModal()});
+  m.classList.add('on');$('#mveil').classList.add('on')}
+function closeModal(){modalOpen=false;$('#modal').classList.remove('on');$('#mveil').classList.remove('on');render();save()}
+function outcome(res,inModal){
+  const chips=apply(res.d);const t=res.o||toneOf(chips);
+  log(res.m,t,chips);feedback(t);
+  if(res.mile)addMile(res.mile);
+  if(S.para>=1e6)addMile('milyoner');
+  if(inModal){const m=$('#modal');
+    m.innerHTML=`<div class="me">${t==='good'?'✨':t==='bad'?'😬':'📝'}</div><p>${res.m}</p>${chipHTML(chips)}<button class="btn pri">Devam</button>`;
+    m.querySelector('.btn').onclick=closeModal}
+  else toast(res.m+chipHTML(chips));
+  render();
+  if(S.saglik<=0&&S.alive){checkDeath();closeModal();closeSheet()}
+}
+let tT;function toast(h){const t=$('#toast');t.innerHTML=h;t.classList.add('on');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('on'),2600)}
+
+/* ---------- aksiyonlar ---------- */
+function useEnergy(){if(S.energy<=0){toast('⚡ Bu yılın enerjisi bitti. <b>+1 YAŞ</b>\'a bas!');sfx('bad');return false}S.energy--;return true}
+function act(fn,cost=0){return()=>{if(cost&&S.para<cost){toast(`Paran yetmiyor (${money(cost)} lazım).`);sfx('bad');return}
+  if(!useEnergy())return;const res=fn();if(res)outcome(res,false);if(sheetOpen)renderSheet()}}
+function A(ic,t,sub,run,o={}){return{ic,t,sub,run,...o}}
+
+function benList(){
+  const a=S.age,L=[];
+  if(a<=12)L.push(A('🧸','Oyun oyna','Hayal gücüne serbest gezinti',act(()=>r(pick(['Minderlerden kale yaptın.','Kediyle saklambaç oynadın (kedi kazandı).','Halıdaki desenleri lav sandın.']),{mutluluk:R(3,8),karizma:R(0,1)}))));
+  if(a>=5)L.push(A('📚','Kitap oku','+Zeka',act(()=>r(pick(['Bir oturuşta bir roman bitirdin.','Uzay hakkında bir kitap okudun. Kafan güzel karıştı.','Tarih kitabına daldın.']),{zeka:R(2,5)}))));
+  if(a>=6)L.push(A('🏃','Spor yap','+Sağlık, biraz Karizma',act(()=>a>70&&chance(.12)?r('Fazla zorladın, belin tuttu.',{saglik:-4},'bad'):r(pick(['Sabah koşusu yaptın.','Yüzmeye gittin.','Parkta barfiks çektin.','Basketbol oynadın.']),{saglik:R(2,6),karizma:R(0,2),mutluluk:R(0,2)}))));
+  if(a>=12)L.push(A('🧘','Meditasyon','+Mutluluk',act(()=>r('Nefesine odaklandın. Dünya biraz yavaşladı.',{mutluluk:R(3,7),saglik:R(0,2)}))));
+  if(a>=14)L.push(A('💇','Kendine bak',a>=18?'₺2 bin · +Karizma':'+Karizma',act(()=>r(pick(['Yeni bir saç modeli denedin. Yakıştı!','Gardırobunu yeniledin.','Aynada kendine gülümsedin. Hepsi bu.']),{karizma:R(2,5),para:a>=18?-2000:0}),a>=18?2000:0)));
+  if(a>=14)L.push(A('🤲','Gönüllü ol','+Mutluluk, +Karizma',act(()=>r(pick(['Hayvan barınağında köpek gezdirdin.','Kitap bağışı kampanyasına yardım ettin.','Sahil temizliğine katıldın.']),{mutluluk:R(2,5),karizma:R(1,3)}))));
+  L.push(A('🩺','Doktora git',a>=18?'₺5 bin · +Sağlık':'Ailen öder',act(()=>r('Doktor seni baştan aşağı inceledi ve tedavi etti.',{saglik:S.saglik<50?R(8,18):R(3,8),para:a>=18?-5000:0}),a>=18?5000:0)));
+  if(a>=18)L.push(A('🏝️','Tatile çık','₺50 bin · +Mutluluk',act(()=>r(pick(['Kaş\'ta bir hafta denize girdin.','Kapadokya\'da balonla güneşi karşıladın.','Karadeniz yaylalarında kayboldun (iyi anlamda).']),{mutluluk:R(8,15),saglik:2,para:-50000},'good'),50000)));
+  if(a>=25)L.push(A('🌍','Dünya turu','₺800 bin · Bir ömürlük anı',act(()=>r('Altı ay boyunca dünyayı dolaştın. Artık her şeye başka bakıyorsun.',{mutluluk:25,zeka:5,karizma:5,para:-800000},'good','dunya'),800000)));
+  return L}
+
+function iliskiList(){
+  const a=S.age,L=[];
+  const fam=S.fam.filter(f=>f.alive);
+  if(fam.length)L.push({sec:'AİLE'});
+  for(const f of fam)L.push(A(f.rel==='Annen'?'👩':f.rel==='Baban'?'👨':'🧒',`${f.rel} ${f.name}`,`${f.age} yaş · Sevgi ${Math.round(f.love)}%`,act(()=>{f.love=clamp(f.love+R(4,10));
+    const lines=a<4?[`${f.name} seni kucağına alıp ninni söyledi.`]:[`${f.name} ile uzun bir yürüyüşe çıktınız.`,`${f.name} ile birlikte yemek yaptınız. Mutfak savaş alanı oldu.`,`${f.name} ile eski fotoğraflara baktınız.`,`${f.name} ile tavla oynadınız. Yine yenildin.`];
+    return r(pick(lines),{mutluluk:R(1,5)})})));
+  if(S.pet)L.push(A('🐱',S.pet,'Evin gerçek sahibi',act(()=>r(`${S.pet} kucağına kıvrılıp mırladı.`,{mutluluk:R(3,6),saglik:1}))));
+  L.push({sec:'AŞK'});
+  if(S.partner){const p=S.partner;L.push(A(S.married?'💍':'💗',p.name,`${S.married?'Eşin':'Sevgilin'} · Aşk ${Math.round(p.love)}%`,()=>openSheet(p.name,partnerList),{go:1}))}
+  else if(a>=16)L.push(A('💘','Aşkı ara','Kalbin hazır mı?',act(()=>{if(chance(.35+S.karizma/200)){S.partner={name:pick(chance(.5)?FN:MN),love:R(45,75)};return r(`Bir kitapçıda ${S.partner.name} ile aynı kitaba uzandınız. Kıvılcım!`,{mutluluk:8},'good')}
+    return r(pick(['Kimseyle tanışamadın. Kader belki seneye.','Bir buluşmaya gittin, karşındaki sürekli telefonuna baktı.']),{mutluluk:-2})})));
+  else L.push({empty:'💭',txt:'Aşk için biraz daha büyümelisin.'});
+  if(S.kids.length){L.push({sec:'ÇOCUKLAR'});for(const k of S.kids)L.push(A(k.age<13?'🧒':'🧑',k.name,`${k.age} yaş · Sevgi ${Math.round(k.love)}%`,act(()=>{k.love=clamp(k.love+R(5,10));return r(k.age<12?`${k.name} ile bütün gün oyun oynadın.`:`${k.name} ile uzun uzun dertleştiniz.`,{mutluluk:R(3,7)})})))}
+  return L}
+function partnerList(){
+  const p=S.partner;if(!p)return iliskiList();const L=[];
+  L.push(A('↩️','Geri','',()=>openTab('iliski')));
+  L.push(A('🍝','Birlikte vakit geçir','+Aşk',act(()=>{p.love=clamp(p.love+R(6,12));return r(pick([`${p.name} ile mum ışığında yemek yediniz.`,`${p.name} ile sahilde gün batımını izlediniz.`,`${p.name} ile saatlerce film izlediniz.`]),{mutluluk:R(3,6)})})));
+  L.push(A('🎁','Hediye al','₺5 bin · ++Aşk',act(()=>{p.love=clamp(p.love+R(10,18));return r(`${p.name} hediyene bayıldı!`,{para:-5000,mutluluk:3})},5000)));
+  if(!S.married&&S.age>=18)L.push(A('💍','Evlenme teklif et','Aşk yüksekse şansın artar',act(()=>{
+    if(chance(p.love/110)){S.married=true;p.love=clamp(p.love+10);return r(`${p.name} "EVET!" dedi. Düğünde herkes ağladı, halay sabaha kadar sürdü.`,{mutluluk:15,para:-Math.min(150000,Math.max(0,S.para*.3))},'good','evlilik')}
+    p.love=clamp(p.love-15);return r(`${p.name} "Henüz hazır değilim" dedi. Ortam buz kesti.`,{mutluluk:-8},'bad')})));
+  if(S.married&&S.age>=20&&S.age<=48)L.push(A('🍼','Çocuk sahibi ol','Hayatın değişecek',act(()=>{
+    if(chance(.6)){const k={name:pick(chance(.5)?FN:MN),age:0,love:80};S.kids.push(k);return r(`Bebeğiniz ${k.name} dünyaya geldi! Uyku artık bir efsane.`,{mutluluk:15,saglik:-2},'good','ebeveyn')}
+    return r('Bu yıl olmadı. Acele yok.',{})})));
+  L.push(A('🚪',S.married?'Boşan':'Ayrıl','Geri dönüşü yok',()=>{if(!useEnergy())return;
+    if(S.married){const loss=Math.round(Math.max(0,S.para)*.3);outcome(r(`${p.name} ile boşandınız.`,{mutluluk:-12,para:-loss},'bad'),false)}
+    else outcome(r(`${p.name} ile ayrıldınız. Sessiz bir veda.`,{mutluluk:-8},'bad'),false);
+    S.partner=null;S.married=false;openTab('iliski')}));
+  return L}
+
+function kariyerList(){
+  const a=S.age,L=[];
+  if(a<6)return[{empty:'🧸',txt:'Henüz kariyer için çok küçüksün. Şimdilik işin oyun oynamak!'}];
+  if(S.edu==='ilkokul'||S.edu==='lise'){
+    L.push({sec:'OKUL · NOT ORTALAMAN '+Math.round(S.grade)});
+    L.push(A('✍️','Derslere sıkı çalış','+Not, +Zeka',act(()=>r('Kütüphanede sabahladın.',{grade:R(5,10),zeka:R(1,3),mutluluk:-R(0,2)}))));
+    L.push(A('🙋','Öğretmenle konuş','Not artabilir',act(()=>chance(.5)?r('Öğretmenin seni çok sevdi, ek ödev verdi.',{grade:R(3,6),karizma:1}):r('Öğretmen "Çalışırsan olur" dedi. Klasik.',{}))))}
+  if(S.uni){L.push({sec:`ÜNİVERSİTE · ${FIELDS[S.uni.f].n.toUpperCase()} · ${S.uni.left} YIL KALDI`});
+    L.push(A('📖','Sınavlara çalış','+Zeka',act(()=>r('Finallere çalıştın, kahve stoğun tükendi.',{zeka:R(2,5),mutluluk:-1}))));
+    L.push(A('🍻','Kampüs hayatı','+Mutluluk, +Karizma',act(()=>r('Kulüplere katıldın, yeni arkadaşlar edindin.',{mutluluk:R(3,6),karizma:R(1,3)}))));
+    L.push(A('🚪','Okulu bırak','Diploma yok olur',()=>{S.uni=null;S.edu='lisemezun';outcome(r('Üniversiteyi bıraktın. Bazen en cesur karar budur... bazen değil.',{mutluluk:-3}),false);renderSheet()}))}
+  if(S.job){const j=JOBS.find(x=>x.id===S.job.id);
+    L.push({sec:'İŞİN'});
+    L.push(A(j.e,jobTitle(),`${money(jobSal())}/yıl · Performans ${Math.round(S.job.perf)}%`,()=>{},{info:1}));
+    L.push(A('💪','Sıkı çalış','+Performans',act(()=>r(pick(['Mesai sonrası kaldın.','Zor bir projeyi tek başına bitirdin.','Toplantıda parladın.']),{perf:R(8,15),mutluluk:-R(0,3)}))));
+    if(S.job.lvl<3)L.push(A('📈','Terfi iste','Performans 70+ olmalı',act(()=>{if(S.job.perf>=70&&chance(.65)){S.job.lvl++;S.job.perf=50;if(S.job.lvl===3)addMile('tavan');return r(`Terfi aldın! Artık "${jobTitle()}" yazıyor kartvizitinde.`,{mutluluk:10,karizma:3},'good')}
+      return r('Patronun "Biraz daha sabır" dedi.',{perf:-5,mutluluk:-3})})));
+    if(a>=60)L.push(A('🏖️','Emekli ol','Maaşın %45\'i emekli maaşı',()=>{S.pension=Math.round(jobSal()*.45);S.retired=true;S.job=null;outcome(r('Veda pastası yendi. Artık tamamen senin zamanın!',{mutluluk:12},'good'),false);renderSheet()}));
+    L.push(A('🚪','İstifa et','Maaş biter',()=>{S.job=null;outcome(r('İstifa mektubunu verdin. Kapıdan çıkarken hafifledin.',{mutluluk:3}),false);renderSheet()}))}
+  else if(!S.uni&&a>=16&&!(S.edu==='ilkokul')){
+    L.push({sec:'İŞ HAYATI'});
+    L.push(A('🔎','İş ilanlarına bak','',()=>openSheet('İş ilanları',jobsList),{go:1}));
+    if(S.edu==='lisemezun'&&a>=18)L.push(A('🎓','Üniversiteye başvur','Zeka ve notlar önemli',()=>{if(!S.energy){useEnergy();return}closeSheet();uniPicker(true)},{go:1}))}
+  if(!L.length)L.push({empty:'📚',txt:'Şimdilik tek işin okulda iyi olmak.'});
+  return L}
+function eligible(j){
+  const a=S.age,mez=['lisemezun','unimezun'].includes(S.edu);
+  if(j.min&&a<j.min)return`${j.min} yaş gerekli`;
+  if(j.lise&&!mez)return'Lise diploması gerekli';
+  if(j.deg&&S.degree!==j.deg)return`${FIELDS[j.deg].n} diploması gerekli`;
+  if(j.kar&&S.karizma<j.kar)return`Karizma ${j.kar}+ gerekli`;
+  if(j.zeka&&S.zeka<j.zeka)return`Zeka ${j.zeka}+ gerekli`;
+  if(S.edu==='lise'&&a<18&&!['garson','kurye','muzisyen'].includes(j.id))return'Önce liseyi bitir';
+  return null}
+function jobsList(){
+  const L=[A('↩️','Geri','',()=>openTab('kariyer'))];
+  const js=JOBS.map(j=>({j,why:eligible(j)})).sort((x,y)=>(!!x.why)-(!!y.why));
+  for(const{j,why}of js)L.push(A(j.e,j.n,why?`🔒 ${why}`:`${money(j.sal)}/yıl`,why?()=>{toast('🔒 '+why);sfx('bad')}:act(()=>{
+    if(chance(.6+(S.karizma-50)/200+(S.zeka-50)/300)){S.job={id:j.id,sal:j.sal,lvl:0,perf:50,yrs:0};S.retired=false;setTimeout(()=>openTab('kariyer'),10);return r(`${j.e} İşe alındın! Artık bir ${j.n}sın.`,{mutluluk:8},'good','ilkis')}
+    return r(`${j.n} başvurun reddedildi. "Sizi ararız" dediler.`,{mutluluk:-3})}),{dis:!!why}));
+  return L}
+function uniPicker(cost){
+  if(cost&&!useEnergy())return;
+  const score=S.zeka+(S.grade-50)/4+R(-8,8);
+  showModal({e:'📝',t:'Sınav sonucu',x:`Puanın: <b>${Math.round(score)}</b>. Hangi bölümü seçiyorsun?`,ch:[
+    ...Object.entries(FIELDS).map(([k,f])=>({t:f.n,sub:score>=f.min?`${f.y} yıl`:`🔒 ${f.min} puan gerekli`,dis:score<f.min,
+      run:()=>{S.uni={f:k,left:f.y};S.edu='uni';return r(`${f.n} bölümünü kazandın! Yurt odan küçük ama hayallerin büyük.`,{mutluluk:10},'good')}})),
+    {t:'Hiçbiri, okumayacağım',run:()=>r('Okumak her şey değil. Hayat da bir okul.',{})}]})}
+
+function paraList(){
+  const a=S.age,L=[];
+  if(a<18)return[{empty:'🐷',txt:'18 yaşına kadar para işleri ailende. Kumbaran güvende.'}];
+  L.push({sec:'YATIRIM'});
+  const base=Math.max(0,S.para);
+  L.push(A('🛡️','Güvenli fon','Paranın %20\'si · düşük risk',act(()=>{const b=Math.round(base*.2);if(b<1000)return r('Yatıracak kadar paran yok.',{});return r('Fon küçük ama istikrarlı kazandırdı.',{para:Math.round(b*R(3,12)/100)})})));
+  L.push(A('🎢','Riskli girişim','Paranın %30\'u · ya hep ya hiç',act(()=>{const b=Math.round(base*.3);if(b<5000)return r('Girişim için biraz daha birikim lazım.',{});
+    const x=Math.random();if(x<.45)return r('Girişim battı. Ders alındı.',{para:-Math.round(b*R(60,100)/100),mutluluk:-4},'bad');
+    if(x<.88)return r('Girişim tuttu! Güzel kazanç.',{para:Math.round(b*R(20,120)/100),mutluluk:3},'good');
+    return r('JACKPOT! Yatırdığın şirket bir yıldız oldu!',{para:b*R(3,6),mutluluk:10},'gold')})));
+  L.push(A('🎟️','Piyango bileti','₺200',act(()=>{const x=Math.random();
+    if(x<.0008)return r('İNANILMAZ! BÜYÜK İKRAMİYE SENİN!',{para:10000000,mutluluk:30},'gold','piyango');
+    if(x<.03)return r('Amorti değil, gerçek ikramiye! Küçük ama tatlı.',{para:R(1000,20000),mutluluk:3},'good');
+    return r('Boş çıktı. Hayal kurması güzeldi.',{para:-200})},200)));
+  if(base>=20000)L.push(A('💝','Bağış yap','Paranın %5\'i · iyi hissettirir',act(()=>r('Bir okulun kütüphanesine bağış yaptın.',{para:-Math.round(base*.05),mutluluk:R(5,9),karizma:R(2,4)},'good'))));
+  L.push({sec:'MÜLK'});
+  if(!S.house)L.push(A('🏡','Ev satın al','₺3,5 Mn · kira biter',act(()=>{S.house=true;return r('Anahtarları teslim aldın. Kendi evin!',{para:-3500000,mutluluk:15},'good','ev')},3500000)));
+  else L.push(A('🏡','Evin','Kira yok, huzur çok',()=>{},{info:1}));
+  if(!S.car)L.push(A('🚗','Araba al','₺900 bin · +Karizma',act(()=>{S.car=true;return r('Yeni araban kapının önünde parlıyor.',{para:-900000,mutluluk:8,karizma:4},'good')},900000)));
+  else L.push(A('🚗','Araban','Yıllık bakım ₺25 bin',()=>{},{info:1}));
+  return L}
+
+/* ---------- sheet ---------- */
+let sheetTitle='',sheetFn=null;
+const TABS={ben:['🙂 Kendin',benList],iliski:['💞 İlişkiler',iliskiList],kariyer:['🎒 Kariyer',kariyerList],para:['🪙 Para',paraList]};
+function openTab(k){curTab=k;openSheet(TABS[k][0],TABS[k][1])}
+function openSheet(t,fn){if(!S||!S.alive||modalOpen)return;sheetTitle=t;sheetFn=fn;sheetOpen=true;renderSheet();$('#sheet').classList.add('on');$('#veil').classList.add('on');sfx('click')}
+function closeSheet(){sheetOpen=false;$('#sheet').classList.remove('on');$('#veil').classList.remove('on')}
+function renderSheet(){
+  if(!sheetOpen)return;if(!S.alive){closeSheet();return}
+  const items=sheetFn();const sh=$('#sheet');
+  sh.innerHTML=`<div class="grab"></div><div class="sh-t">${sheetTitle}<button class="x" id="shx">Kapat ✕</button></div>
+    <div class="sh-e">⚡ Kalan enerji: ${S.energy}/3 · 💰 ${money(S.para)}</div>`+
+    items.map((it,i)=>it.sec?`<div class="sec">${it.sec}</div>`:it.empty?`<div class="empty"><span>${it.empty}</span>${it.txt}</div>`:
+      `<button class="row ${it.dis?'dis':''}" data-i="${i}"><span class="ic">${it.ic}</span><span class="tx"><b>${it.t}</b>${it.sub?`<small>${it.sub}</small>`:''}</span>${it.info?'':`<span class="go">${it.go?'›':'⚡'}</span>`}</button>`).join('');
+  sh.querySelectorAll('.row').forEach(b=>b.onclick=()=>{const it=items[+b.dataset.i];it.run()});
+  $('#shx').onclick=closeSheet}
+
+/* ---------- render ---------- */
+function render(bump){
+  if(!S)return;
+  $('#ava').textContent=avatar();$('#nm').textContent=S.name+' '+S.sur;$('#st').textContent=status();
+  const ag=$('#age');ag.textContent=S.age;if(bump){ag.classList.remove('pop');void ag.offsetWidth;ag.classList.add('pop')}
+  $('#stats').innerHTML=Object.entries(STATS).map(([k,[e,n,c]])=>`<div class="stat ${S[k]<25?'low':''}"><div class="lb"><span>${e} ${n}</span><span>${Math.round(S[k])}</span></div><div class="bar"><i style="width:${S[k]}%;background:${c}"></i></div></div>`).join('');
+  $('#para').textContent=money(S.para);$('#para').style.color=S.para<0?'var(--red)':'';
+  $('#net').textContent=S.age>=18?`${S.net>=0?'+':''}${money(S.net)}/yıl`:'';
+  $('#energy').innerHTML='⚡ '+[0,1,2].map(i=>`<i class="${i<S.energy?'':'off'}"></i>`).join('');
+  $('#ageBtn').disabled=!S.alive;
+  // günlük
+  let h='',cur=null;
+  for(let i=S.log.length-1;i>=0;i--){const l=S.log[i];if(l.a!==cur){cur=l.a;h+=`<div class="year">${l.a===0?'Doğum':l.a+' yaşında'}</div>`}
+    h+=`<div class="entry ${l.o}">${l.t}${chipHTML(l.c)}</div>`}
+  const j=$('#journal');j.innerHTML=h;j.scrollTop=0;
+  if(sheetOpen)renderSheet()}
+
+/* ---------- son ---------- */
+function score(){const avg=S.hapSum/Math.max(1,S.age);
+  return Math.round(S.age*4+avg*3+S.miles.length*40+Math.max(0,Math.log10(Math.max(1,S.para)))*15+(S.married?30:0)+S.kids.length*20)}
+function epitaph(){
+  if(S.kids.length>=3)return'Kalabalık bir sofranın başıydı.';
+  if(S.para>=5e6)return'Parayı buldu; umarız huzuru da buldu.';
+  if(S.zeka>=85)return'Çok okudu, çok bildi, hep merak etti.';
+  if(S.karizma>=85)return'Girdiği her odayı aydınlattı.';
+  if(S.mutluluk>=80)return'Gülerek yaşadı, gülerek hatırlanacak.';
+  if(S.age>=95)return'Sabırla, uzun uzun yaşadı.';
+  if(S.age<30)return'Kısa ama dolu dolu bir hikâye.';
+  return'Kendi hikâyesini kendi yazdı.'}
+function showEnd(){
+  closeSheet();if(modalOpen){modalOpen=false;$('#modal').classList.remove('on');$('#mveil').classList.remove('on')}
+  const sc=score(),best=+(store.get('birOmur.best')||0),rec=sc>best;if(rec)store.set('birOmur.best',sc);
+  $('#endCard').innerHTML=`<div class="tomb">🪦</div><div class="epi">${S.name} ${S.sur}</div>
+    <div style="color:var(--mute);font-weight:700">${S.age} yıl · ${S.cause}</div>
+    <p style="font-style:italic;margin:10px 0">“${epitaph()}”</p>
+    <div class="sum"><div><b>${Math.round(S.hapSum/Math.max(1,S.age))}</b>ort. mutluluk</div><div><b>${money(S.para)}</b>servet</div><div><b>${S.kids.length}</b>çocuk</div></div>
+    <div class="miles">${S.miles.length?S.miles.map(m=>`<span>${MILES[m][0]} ${MILES[m][1]}</span>`).join(''):'<span>Kilometre taşı yok</span>'}</div>
+    <div style="font-size:12px;font-weight:900;color:var(--mute);letter-spacing:.1em">ÖMÜR PUANI</div>
+    <div class="score">${sc}</div>
+    <div class="best">${rec?'🎉 YENİ REKOR!':'Rekor: '+best}</div>
+    <button class="btn pri" id="againBtn" style="margin-top:14px">Yeni bir hayat</button>
+    <button class="btn" id="journalBtn">Günlüğe bak</button>`;
+  $('#end').classList.remove('hide');if(rec)burst(80);
+  $('#againBtn').onclick=()=>{$('#end').classList.add('hide');showStart()};
+  $('#journalBtn').onclick=()=>$('#end').classList.add('hide');
+  $('#ageBtn').disabled=true}
+function showStart(){
+  $('#start').classList.remove('hide');
+  const best=store.get('birOmur.best');$('#bestTxt').textContent=best?`🏆 Rekor ömür puanı: ${best}`:'';
+  $('#contBtn').style.display=store.get('birOmur.save')?'block':'none';
+  $('#nameIn').value=''}
+
+/* ---------- olay bağlama ---------- */
+$('#ageBtn').onclick=ageUp;
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
+$('#veil').onclick=closeSheet;
+document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{gender=b.dataset.g;document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x===b));sfx('click')});
+$('#dice').onclick=()=>{$('#nameIn').value=pick(gender==='k'?FN:MN);sfx('click')};
+$('#goBtn').onclick=()=>{const n=$('#nameIn').value.trim()||pick(gender==='k'?FN:MN);newLife(n.charAt(0).toLocaleUpperCase('tr')+n.slice(1),gender);sfx('good')};
+$('#contBtn').onclick=()=>{try{S=JSON.parse(store.get('birOmur.save'));$('#start').classList.add('hide');render();sfx('good')}catch(e){store.del('birOmur.save');showStart()}};
+$('#nameIn').addEventListener('keydown',e=>{if(e.key==='Enter')$('#goBtn').click()});
+$('#themeBtn').onclick=()=>{const r=document.documentElement;const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+  r.dataset.theme=dark?'light':'dark';store.set('birOmur.theme',r.dataset.theme)};
+{const t=store.get('birOmur.theme');if(t)document.documentElement.dataset.theme=t}
+addEventListener('keydown',e=>{
+  if(!$('#start').classList.contains('hide')||!$('#end').classList.contains('hide'))return;
+  if(modalOpen){const n=+e.key;if(n>=1&&n<=9){const b=$('#modal').querySelectorAll('.btn')[n-1];if(b&&!b.disabled)b.click()}
+    else if(e.key==='Enter'||e.key===' '){const b=$('#modal').querySelector('.btn.pri');if(b){e.preventDefault();b.click()}}return}
+  if(e.key===' '||e.key==='Enter'){e.preventDefault();ageUp()}
+  else if(e.key==='Escape')closeSheet();
+  else if(['1','2','3','4'].includes(e.key))openTab(['ben','iliski','kariyer','para'][+e.key-1]);
+});
+showStart();
+</script>
+</body>
+</html>
