@@ -1,0 +1,330 @@
+{
+ "total": 64.192,
+ "segs": [
+  {
+   "id": "hook",
+   "s": 0.0,
+   "v": 0.15,
+   "vd": 5.11,
+   "e": 5.66,
+   "chunks": [
+    {
+     "t": 0.15,
+     "d": 1.629,
+     "text": "Bahçene kendi *havuzunu*"
+    },
+    {
+     "t": 1.779,
+     "d": 0.518,
+     "text": "yapsan,"
+    },
+    {
+     "t": 2.298,
+     "d": 1.185,
+     "text": "kaç gün sürerdi?"
+    },
+    {
+     "t": 3.482,
+     "d": 1.777,
+     "text": "Hadi kesitten izleyelim."
+    }
+   ]
+  },
+  {
+   "id": "mark",
+   "s": 5.66,
+   "v": 5.81,
+   "vd": 5.611,
+   "e": 11.721,
+   "chunks": [
+    {
+     "t": 5.81,
+     "d": 1.239,
+     "text": "Önce zemini ölçüp"
+    },
+    {
+     "t": 7.049,
+     "d": 1.239,
+     "text": "ipleri geriyoruz."
+    },
+    {
+     "t": 8.287,
+     "d": 1.093,
+     "text": "Altı metreye üç"
+    },
+    {
+     "t": 9.381,
+     "d": 0.437,
+     "text": "metre,"
+    },
+    {
+     "t": 9.818,
+     "d": 1.093,
+     "text": "klasik bir *aile"
+    },
+    {
+     "t": 10.911,
+     "d": 0.51,
+     "text": "havuzu*."
+    }
+   ]
+  },
+  {
+   "id": "dig",
+   "s": 11.721,
+   "v": 11.871,
+   "vd": 5.719,
+   "e": 18.19,
+   "chunks": [
+    {
+     "t": 11.871,
+     "d": 1.654,
+     "text": "Sonra ekskavatör devreye"
+    },
+    {
+     "t": 13.525,
+     "d": 0.551,
+     "text": "giriyor."
+    },
+    {
+     "t": 14.076,
+     "d": 1.24,
+     "text": "İki günde yaklaşık"
+    },
+    {
+     "t": 15.316,
+     "d": 1.24,
+     "text": "*otuz yedi metreküp*"
+    },
+    {
+     "t": 16.556,
+     "d": 1.034,
+     "text": "toprak çıkıyor."
+    }
+   ]
+  },
+  {
+   "id": "base",
+   "s": 18.19,
+   "v": 18.34,
+   "vd": 5.561,
+   "e": 24.301,
+   "chunks": [
+    {
+     "t": 18.34,
+     "d": 1.742,
+     "text": "Tabana sıkıştırılmış çakıl"
+    },
+    {
+     "t": 20.082,
+     "d": 0.67,
+     "text": "seriliyor,"
+    },
+    {
+     "t": 20.752,
+     "d": 1.206,
+     "text": "üstüne *çelik hasır*"
+    },
+    {
+     "t": 21.958,
+     "d": 0.603,
+     "text": "örülüyor."
+    },
+    {
+     "t": 22.561,
+     "d": 1.34,
+     "text": "Havuzun iskeleti bu."
+    }
+   ]
+  },
+  {
+   "id": "pipe",
+   "s": 24.301,
+   "v": 24.451,
+   "vd": 5.809,
+   "e": 30.56,
+   "chunks": [
+    {
+     "t": 24.451,
+     "d": 1.307,
+     "text": "Şimdi gizli kısım:"
+    },
+    {
+     "t": 25.758,
+     "d": 1.017,
+     "text": "dip süzgeci ve"
+    },
+    {
+     "t": 26.775,
+     "d": 1.162,
+     "text": "*filtre boruları*."
+    },
+    {
+     "t": 27.937,
+     "d": 1.525,
+     "text": "Bitince bunları kimse"
+    },
+    {
+     "t": 29.461,
+     "d": 0.799,
+     "text": "görmeyecek."
+    }
+   ]
+  },
+  {
+   "id": "pour",
+   "s": 30.56,
+   "v": 30.71,
+   "vd": 5.739,
+   "e": 36.949,
+   "chunks": [
+    {
+     "t": 30.71,
+     "d": 1.863,
+     "text": "Ardından beton dökülüyor."
+    },
+    {
+     "t": 32.573,
+     "d": 1.267,
+     "text": "Taban ve duvarlar"
+    },
+    {
+     "t": 33.841,
+     "d": 1.267,
+     "text": "*tek parça* olmalı,"
+    },
+    {
+     "t": 35.108,
+     "d": 1.342,
+     "text": "yoksa su sızdırır."
+    }
+   ]
+  },
+  {
+   "id": "cure",
+   "s": 36.949,
+   "v": 37.099,
+   "vd": 3.467,
+   "e": 42.166,
+   "chunks": [
+    {
+     "t": 37.099,
+     "d": 0.682,
+     "text": "Ve en sıkıcı"
+    },
+    {
+     "t": 37.781,
+     "d": 0.341,
+     "text": "kısım:"
+    },
+    {
+     "t": 38.122,
+     "d": 1.194,
+     "text": "betonun kuruması için"
+    },
+    {
+     "t": 39.316,
+     "d": 0.739,
+     "text": "tam *bir hafta*"
+    },
+    {
+     "t": 40.055,
+     "d": 0.512,
+     "text": "beklemek."
+    }
+   ]
+  },
+  {
+   "id": "tile",
+   "s": 42.166,
+   "v": 42.316,
+   "vd": 4.657,
+   "e": 47.573,
+   "chunks": [
+    {
+     "t": 42.316,
+     "d": 1.592,
+     "text": "Sonra seramikler döşeniyor,"
+    },
+    {
+     "t": 43.908,
+     "d": 1.533,
+     "text": "köşeye *merdiven* ekleniyor,"
+    },
+    {
+     "t": 45.44,
+     "d": 1.533,
+     "text": "kenarlar taşla kaplanıyor."
+    }
+   ]
+  },
+  {
+   "id": "fill",
+   "s": 47.573,
+   "v": 47.723,
+   "vd": 4.002,
+   "e": 53.124,
+   "chunks": [
+    {
+     "t": 47.723,
+     "d": 0.96,
+     "text": "Ve büyük an."
+    },
+    {
+     "t": 48.683,
+     "d": 1.361,
+     "text": "Yaklaşık *otuz ton*"
+    },
+    {
+     "t": 50.044,
+     "d": 0.24,
+     "text": "su,"
+    },
+    {
+     "t": 50.284,
+     "d": 1.441,
+     "text": "tek günde doluyor."
+    }
+   ]
+  },
+  {
+   "id": "reveal",
+   "s": 53.124,
+   "v": 53.274,
+   "vd": 8.518,
+   "e": 64.192,
+   "chunks": [
+    {
+     "t": 53.274,
+     "d": 1.514,
+     "text": "Işıklar yanıyor."
+    },
+    {
+     "t": 54.789,
+     "d": 1.514,
+     "text": "*Yirmi bir günde*,"
+    },
+    {
+     "t": 56.303,
+     "d": 2.177,
+     "text": "bahçende kendi havuzun."
+    },
+    {
+     "t": 58.48,
+     "d": 1.325,
+     "text": "Sırada ne inşa"
+    },
+    {
+     "t": 59.805,
+     "d": 0.662,
+     "text": "edelim?"
+    },
+    {
+     "t": 60.467,
+     "d": 1.325,
+     "text": "Yorumlara yaz."
+    }
+   ]
+  }
+ ]
+}
