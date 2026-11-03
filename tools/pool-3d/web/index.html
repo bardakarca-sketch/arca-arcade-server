@@ -6,23 +6,25 @@ html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:#000}
 #sky{position:absolute;inset:0}
 canvas{position:absolute;left:0;top:0}
 #hud{position:absolute;top:170px;left:0;right:0;text-align:center;transform-origin:50% 0}
-#pill{display:inline-flex;align-items:center;gap:24px;background:rgba(10,12,20,.74);border-radius:70px;padding:18px 44px;font:58px IX;color:#fff;letter-spacing:-.5px}
-#day{color:#ffd400}
+#pill{display:inline-flex;align-items:center;gap:22px;border-radius:70px;padding:18px 44px;font:56px IX;color:#fff;letter-spacing:-.5px;background:rgba(10,12,20,.78)}
+#pill.bad{background:rgba(214,40,40,.92)} #pill.good{background:rgba(22,160,90,.92)} #pill.gold{background:rgba(20,20,30,.85)}
+#tag{color:#ffd400} #pill.bad #tag,#pill.good #tag{color:#fff;opacity:.85}
 #sub{margin-top:18px;font:46px IX;color:#fff;-webkit-text-stroke:10px #000;paint-order:stroke fill}
 #cap{position:absolute;left:50px;right:50px;top:560px;text-align:center;font:88px/1.08 IX;color:#fff;-webkit-text-stroke:16px #000;paint-order:stroke fill;letter-spacing:-1.5px;transform-origin:50% 50%}
 #cap b{color:#ffd400}
-.lab{position:absolute;font:52px IX;color:#fff;-webkit-text-stroke:11px #000;paint-order:stroke fill;transform:translate(-50%,-50%);white-space:nowrap}
+.lab{position:absolute;font:42px IX;color:#fff;background:rgba(10,12,20,.8);padding:8px 20px;border-radius:30px;transform:translate(-50%,-130%);white-space:nowrap;border:3px solid #ffd400}
+.lab:after{content:"";position:absolute;left:50%;bottom:-26px;width:4px;height:24px;background:#ffd400;transform:translateX(-50%)}
 </style></head><body>
 <div id="sky"></div>
-<div id="hud"><div id="pill"><span id="day"></span><span id="stage"></span></div><div id="sub"></div></div>
+<div id="hud"><div id="pill"><span id="tag"></span><span id="stage"></span></div><div id="sub"></div></div>
 <div id="cap"></div>
-<div id="l1" class="lab"></div><div id="l2" class="lab"></div><div id="l3" class="lab"></div>
+<div id="labs"></div>
 <script type="importmap">{"imports":{"three":"./three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
 const TL = await (await fetch('timeline.json')).json();
-const S = {}; TL.segs.forEach(s => S[s.id] = s);
-window.TOTAL = TL.total;
+const S = {}; TL.segs.forEach(s => S[s.id] = s); window.TOTAL = TL.total;
+const ORDER = TL.segs.map(s => s.id);
 let T = 0;
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const sm = x => { x = clamp(x); return x * x * (3 - 2 * x) };
@@ -30,8 +32,12 @@ const eo = x => { x = clamp(x); return 1 - Math.pow(1 - x, 3) };
 const eb = x => { x = clamp(x); const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2) };
 const lerp = (a, b, u) => a + (b - a) * u;
 const P = (id, a = 0, b = 1) => { const s = S[id]; const u = (T - s.s) / (s.e - s.s); return clamp((u - a) / (b - a)) };
+const At = (t0, d) => clamp((T - t0) / d);
 const inSeg = id => T >= S[id].s && T < S[id].e;
-let seed = 7; const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646 };
+const after = id => T >= S[id].s;
+let seed = 11; const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646 };
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const C = h => new THREE.Color(h);
 
 // ---------- renderer ----------
 const R = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
@@ -39,156 +45,137 @@ R.setPixelRatio(1); R.setSize(1080, 1920);
 R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFSoftShadowMap;
 R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = 1.05;
 document.body.insertBefore(R.domElement, document.getElementById('hud'));
-const scene = new THREE.Scene();
-const cam = new THREE.PerspectiveCamera(55, 1080 / 1920, 0.1, 200);
-cam.setViewOffset(1080, 1920, 0, -280, 1080, 1920);
+const scene = new THREE.Scene(); scene.fog = new THREE.Fog(0xcfe6ff, 40, 130);
+const cam = new THREE.PerspectiveCamera(55, 1080 / 1920, 0.1, 400); cam.setViewOffset(1080, 1920, 0, -280, 1080, 1920);
 const hemi = new THREE.HemisphereLight(0xd6ecff, 0x557a35, 1.0); scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xffffff, 2.8); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
-Object.assign(sun.shadow.camera, { left: -15, right: 15, top: 15, bottom: -15, near: 1, far: 70 });
+const sun = new THREE.DirectionalLight(0xffffff, 2.8); sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096);
+Object.assign(sun.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 1, far: 90 });
 sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03; scene.add(sun); scene.add(sun.target);
 
 // ---------- dokular ----------
 function tex(w, h, draw, rep = [1, 1]) {
   const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(...rep); t.anisotropy = 4; return t;
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...rep); t.anisotropy = 8; return t;
 }
-const grassImg = (g, w, h) => {
-  g.fillStyle = '#69b744'; g.fillRect(0, 0, w, h);
-  for (let i = 0; i < 2600; i++) { g.fillStyle = rnd() < .5 ? 'rgba(40,110,30,.35)' : 'rgba(150,215,90,.35)'; g.fillRect(rnd() * w, rnd() * h, 2 + rnd() * 3, 5 + rnd() * 8) }
-};
+const grassImg = (g, w, h) => { g.fillStyle = '#69b744'; g.fillRect(0, 0, w, h); for (let i = 0; i < 2600; i++) { g.fillStyle = rnd() < .5 ? 'rgba(40,110,30,.35)' : 'rgba(150,215,90,.35)'; g.fillRect(rnd() * w, rnd() * h, 2 + rnd() * 3, 5 + rnd() * 8) } };
+const GY0 = -12;
 const bandImg = (g, w, h) => {
-  const L = [[0, .07, '#4a2f1b'], [.07, .35, '#7b4f2e'], [.35, .7, '#9a6a42'], [.7, 1, '#6e5a4a']];
+  const L = [[0, .022, '#4a2f1b'], [.022, .2, '#7b4f2e'], [.2, .45, '#9a6a42'], [.45, 1, '#6c5c50']];
   for (const [a, b, c] of L) { g.fillStyle = c; g.fillRect(0, a * h, w, (b - a) * h + 1) }
-  for (let i = 0; i < 900; i++) { const y = rnd() * h, r = 1 + rnd() * (y > .7 * h ? 7 : 3); g.fillStyle = `rgba(${y > .7 * h ? '160,150,140' : '60,35,20'},${.25 + rnd() * .4})`; g.beginPath(); g.arc(rnd() * w, y, r, 0, 7); g.fill() }
+  for (let i = 0; i < 2600; i++) { const y = rnd() * h, deep = y > .45 * h, r = 1 + rnd() * (deep ? 9 : 3); g.fillStyle = `rgba(${deep ? '150,140,130' : '60,35,20'},${.25 + rnd() * .4})`; g.beginPath(); g.arc(rnd() * w, y, r, 0, 7); g.fill() }
 };
 const soilImg = (g, w, h) => { g.fillStyle = '#7d5234'; g.fillRect(0, 0, w, h); for (let i = 0; i < 700; i++) { g.fillStyle = `rgba(50,30,15,${.2 + rnd() * .3})`; g.beginPath(); g.arc(rnd() * w, rnd() * h, 1 + rnd() * 4, 0, 7); g.fill() } };
 const gravelImg = (g, w, h) => { g.fillStyle = '#9a9a96'; g.fillRect(0, 0, w, h); for (let i = 0; i < 1400; i++) { const v = 110 + rnd() * 110 | 0; g.fillStyle = `rgb(${v},${v},${v - 6})`; g.beginPath(); g.ellipse(rnd() * w, rnd() * h, 2 + rnd() * 5, 2 + rnd() * 4, rnd() * 3, 0, 7); g.fill() } };
-const tileImg = (g, w, h) => {
-  g.fillStyle = '#e8f4f8'; g.fillRect(0, 0, w, h); const n = 8, s = w / n;
-  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const v = rnd() * 18; g.fillStyle = `rgb(${40 + v},${150 + v},${205 + v / 2})`; g.fillRect(i * s + 3, j * s + 3, s - 6, s - 6) }
-};
+const tileImg = (g, w, h) => { g.fillStyle = '#e8f4f8'; g.fillRect(0, 0, w, h); const n = 8, s = w / n; for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const v = rnd() * 18; g.fillStyle = `rgb(${40 + v},${150 + v},${205 + v / 2})`; g.fillRect(i * s + 3, j * s + 3, s - 6, s - 6) } };
 const wallTileImg = (g, w, h) => { tileImg(g, w, h); g.fillStyle = '#123a73'; g.fillRect(0, 0, w, h * .14); g.fillStyle = 'rgba(255,255,255,.5)'; for (let i = 0; i < w; i += w / 16) g.fillRect(i, 0, 2, h * .14) };
 const woodImg = (g, w, h) => { g.fillStyle = '#b07a48'; g.fillRect(0, 0, w, h); for (let i = 0; i < 60; i++) { g.strokeStyle = `rgba(90,50,20,${.15 + rnd() * .2})`; g.lineWidth = 1 + rnd() * 2; g.beginPath(); const y = rnd() * h; g.moveTo(0, y); g.bezierCurveTo(w * .3, y + rnd() * 6, w * .6, y - rnd() * 6, w, y); g.stroke() } };
 const stripeImg = (g, w, h) => { for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#ffffff' : '#ff5a4f'; g.fillRect(i * w / 8, 0, w / 8 + 1, h) } };
+const asphaltImg = (g, w, h) => { g.fillStyle = '#3b3e45'; g.fillRect(0, 0, w, h); for (let i = 0; i < 900; i++) { g.fillStyle = `rgba(255,255,255,${rnd() * .06})`; g.fillRect(rnd() * w, rnd() * h, 2, 2) } g.fillStyle = '#f2d24b'; for (let x = 0; x < w; x += 64) g.fillRect(x, h / 2 - 3, 36, 6) };
 
-const grassBase = tex(256, 256, grassImg); const bandBase = tex(256, 512, bandImg);
+const grassBase = tex(256, 256, grassImg); const bandBase = tex(256, 1024, bandImg);
+const std = (o) => new THREE.MeshStandardMaterial(o);
 const M = {
-  soil: new THREE.MeshStandardMaterial({ map: tex(256, 256, soilImg, [2, 2]), roughness: 1 }),
-  gravel: new THREE.MeshStandardMaterial({ map: tex(256, 256, gravelImg, [4, 2]), roughness: 1 }),
-  conc: new THREE.MeshStandardMaterial({ color: 0x9a9a95, roughness: .95 }),
-  white: new THREE.MeshStandardMaterial({ color: 0xf4f4f0, roughness: .5 }),
-  pipe: new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: .35 }),
-  rebar: new THREE.MeshStandardMaterial({ color: 0x8c4a28, roughness: .5, metalness: .4 }),
-  stone: new THREE.MeshStandardMaterial({ color: 0xe6dcc6, roughness: .8 }),
-  yel: new THREE.MeshStandardMaterial({ color: 0xf2b705, roughness: .55 }),
-  dark: new THREE.MeshStandardMaterial({ color: 0x2b2b2e, roughness: .85 }),
-  glass: new THREE.MeshStandardMaterial({ color: 0x1d3446, roughness: .15, metalness: .3 }),
-  rope: new THREE.MeshStandardMaterial({ color: 0xff6a1a, roughness: .6, emissive: 0x401000 }),
-  paint: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .9 }),
-  wood: new THREE.MeshStandardMaterial({ map: tex(256, 128, woodImg), roughness: .8 }),
-  house: new THREE.MeshStandardMaterial({ color: 0xf6efe4, roughness: .9 }),
-  roof: new THREE.MeshStandardMaterial({ color: 0xc8553d, roughness: .8 }),
-  leaf: new THREE.MeshStandardMaterial({ color: 0x3f9a3a, roughness: .9, flatShading: true }),
-  leaf2: new THREE.MeshStandardMaterial({ color: 0x58b04a, roughness: .9, flatShading: true }),
-  trunk: new THREE.MeshStandardMaterial({ color: 0x7a5232, roughness: .9 }),
-  cloud: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, flatShading: true }),
-  orange: new THREE.MeshStandardMaterial({ color: 0xff7a1a, roughness: .5 }),
-  drum: new THREE.MeshStandardMaterial({ map: tex(256, 64, stripeImg, [1, 1]), roughness: .5 }),
-  filter: new THREE.MeshStandardMaterial({ color: 0x3d7bd9, roughness: .4 }),
+  soil: std({ map: tex(256, 256, soilImg, [2, 2]), roughness: 1 }), gravel: std({ map: tex(256, 256, gravelImg, [4, 2]), roughness: 1 }),
+  conc: std({ color: 0xc6c6c0, roughness: .95 }), white: std({ color: 0xf4f4f0, roughness: .5 }), stone: std({ color: 0xe6dcc6, roughness: .8 }),
+  rebar: std({ color: 0x8c4a28, roughness: .5, metalness: .4 }), yel: std({ color: 0xf2b705, roughness: .55 }), dark: std({ color: 0x2b2b2e, roughness: .85 }),
+  glass: std({ color: 0x1d3446, roughness: .15, metalness: .3 }), wood: std({ map: tex(256, 128, woodImg), roughness: .8 }),
+  trunk: std({ color: 0x7a5232, roughness: .9 }), cloud: std({ color: 0xffffff, roughness: 1, flatShading: true }), orange: std({ color: 0xff7a1a, roughness: .5 }),
+  drum: std({ map: tex(256, 64, stripeImg), roughness: .5 }), blue: std({ color: 0x2f6fd6, roughness: .35, metalness: .1 }), grey: std({ color: 0x9aa0a8, roughness: .6, metalness: .2 }),
+  asphalt: std({ map: tex(512, 128, asphaltImg, [24, 1]), roughness: .95 }), walk: std({ color: 0xc9c4ba, roughness: .9 }), fence: std({ color: 0xf3efe6, roughness: .8 }),
+  patio: std({ color: 0xd8cfc0, roughness: .9 }),
 };
-const tileFloor = new THREE.MeshStandardMaterial({ map: tex(512, 512, tileImg, [6, 3]), roughness: .25 });
-const tileBack = new THREE.MeshStandardMaterial({ map: tex(512, 512, wallTileImg, [6, 1]), roughness: .25 });
-const tileSide = new THREE.MeshStandardMaterial({ map: tex(512, 512, wallTileImg, [3, 1]), roughness: .25 });
+const leafMats = [0x3f9a3a, 0x58b04a, 0x2f8a46, 0x6cbf4a].map(c => std({ color: c, roughness: .9, flatShading: true }));
+const tileFloor = std({ map: tex(512, 512, tileImg, [6, 3]), roughness: .25 });
+const tileBack = std({ map: tex(512, 512, wallTileImg, [6, 1]), roughness: .25 });
+const tileSide = std({ map: tex(512, 512, wallTileImg, [3, 1]), roughness: .25 });
 
 // ---------- yardımcılar ----------
 const unit = new THREE.BoxGeometry(1, 1, 1);
 function mk(mat, parent = scene, cast = true) { const m = new THREE.Mesh(unit, mat); m.castShadow = cast; m.receiveShadow = true; parent.add(m); return m }
-function setB(m, x0, x1, y0, y1, z0, z1) {
-  const ok = x1 - x0 > 1e-3 && y1 - y0 > 1e-3 && z1 - z0 > 1e-3; m.visible = ok; if (!ok) return;
-  m.scale.set(x1 - x0, y1 - y0, z1 - z0); m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
-}
+function setB(m, x0, x1, y0, y1, z0, z1) { const ok = x1 - x0 > 1e-3 && y1 - y0 > 1e-3 && z1 - z0 > 1e-3; m.visible = ok; if (!ok) return; m.scale.set(x1 - x0, y1 - y0, z1 - z0); m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2) }
 function part(g, mat, w, h, d, x, y, z) { const m = mk(mat, g); m.scale.set(w, h, d); m.position.set(x, y, z); return m }
-const GY0 = -3.2;
-function bandMat(width, y0, y1) {
-  const t = bandBase.clone(); t.needsUpdate = true; t.repeat.set(width / 3, (y1 - y0) / 3.2); t.offset.set(0, (y0 - GY0) / 3.2);
-  return new THREE.MeshStandardMaterial({ map: t, roughness: 1 });
-}
-function grassMat(w, d) { const t = grassBase.clone(); t.needsUpdate = true; t.repeat.set(w / 2.5, d / 2.5); return new THREE.MeshStandardMaterial({ map: t, roughness: 1 }) }
+function cyl(g, mat, r, h, x, y, z, seg = 16) { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg), mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; g.add(m); return m }
+function bandMat(width, y0, y1) { const t = bandBase.clone(); t.needsUpdate = true; t.repeat.set(width / 3, (y1 - y0) / 12); t.offset.set(0, (y0 - GY0) / 12); return std({ map: t, roughness: 1 }) }
+function grassMat(w, d) { const t = grassBase.clone(); t.needsUpdate = true; t.repeat.set(w / 2.5, d / 2.5); return std({ map: t, roughness: 1 }) }
 function ground(x0, x1, z0, z1, y0 = GY0, y1 = 0, top = 'grass') {
-  const side = bandMat(z1 - z0, y0, y1), front = bandMat(x1 - x0, y0, y1);
-  const tm = top === 'grass' ? grassMat(x1 - x0, z1 - z0) : M.soil;
-  const m = new THREE.Mesh(unit, [side, side, tm, M.soil, front, front]); m.receiveShadow = true; m.castShadow = true; scene.add(m);
-  setB(m, x0, x1, y0, y1, z0, z1); return m;
+  const side = bandMat(z1 - z0, y0, y1), front = bandMat(x1 - x0, y0, y1); const tm = top === 'grass' ? grassMat(x1 - x0, z1 - z0) : M.soil;
+  const m = new THREE.Mesh(unit, [side, side, tm, M.soil, front, front]); m.receiveShadow = true; scene.add(m); setB(m, x0, x1, y0, y1, z0, z1); return m;
 }
 
-// ---------- zemin (diorama) ----------
-ground(-9, -3.25, -11, 0); ground(3.25, 9, -11, 0); ground(-3.25, 3.25, -11, -3.25);
-ground(-3.25, 3.25, -3.25, 0, GY0, -2.0, 'soil');
+// ---------- zemin: düz mahalle, önden kesit ----------
+ground(-90, -3.25, -150, 0); ground(3.25, 90, -150, 0); ground(-3.25, 3.25, -150, -3.25); ground(-3.25, 3.25, -3.25, 0, GY0, -2.0, 'soil');
 const fillFront = bandMat(6.5, -2, 0), fillTopGrass = grassMat(6.5, 3.25);
 const fill = new THREE.Mesh(unit, [M.soil, M.soil, fillTopGrass, M.soil, fillFront, M.soil]); fill.receiveShadow = true; scene.add(fill);
 
-// ev, ağaçlar, çit, bulutlar
-const house = new THREE.Group(); house.position.set(-4.6, 0, -8.3); scene.add(house);
-part(house, M.house, 5.2, 2.8, 3.6, 0, 1.4, 0);
-const roof = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 3.1, 1.6, 4, 1), M.roof); roof.rotation.y = Math.PI / 4; roof.scale.set(1.25, 1, .85); roof.position.set(0, 3.6, 0); roof.castShadow = true; house.add(roof);
-for (const x of [-1.6, 0.2, 1.6]) part(house, M.glass, .9, .9, .05, x, 1.6, 1.81);
-part(house, M.trunk, .9, 1.7, .05, -.7, .85, 1.81);
+// ---------- mahalle ----------
+function house(x, z, w, d, h, wall, roofC, door = true) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  part(g, std({ color: wall, roughness: .9 }), w, h, d, 0, h / 2, 0);
+  const roof = new THREE.Mesh(new THREE.CylinderGeometry(.01, 1, 1, 4, 1), std({ color: roofC, roughness: .8 })); roof.rotation.y = Math.PI / 4;
+  roof.scale.set(w / 1.414 * 1.15, h * .5, d / 1.414 * 1.15); roof.position.set(0, h + h * .25, 0); roof.castShadow = true; g.add(roof);
+  const n = Math.max(2, Math.floor(w / 1.8));
+  for (let i = 0; i < n; i++) { const wx = -w / 2 + (i + .5) * w / n; if (door && i === Math.floor(n / 2)) part(g, M.trunk, .9, 1.8, .06, wx, .9, d / 2 + .02); else part(g, M.glass, .8, .8, .06, wx, h * .55, d / 2 + .02) }
+  if (h > 4) for (let i = 0; i < n; i++) part(g, M.glass, .8, .8, .06, -w / 2 + (i + .5) * w / n, h * .82, d / 2 + .02);
+  return g;
+}
 function tree(x, z, s) {
   const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s); scene.add(g);
   const tr = new THREE.Mesh(new THREE.CylinderGeometry(.14, .2, 1.4, 7), M.trunk); tr.position.y = .7; tr.castShadow = true; g.add(tr);
-  for (let i = 0; i < 3; i++) { const l = new THREE.Mesh(new THREE.IcosahedronGeometry(.8 - i * .12, 0), i % 2 ? M.leaf2 : M.leaf); l.position.set((rnd() - .5) * .5, 1.6 + i * .55, (rnd() - .5) * .5); l.castShadow = true; g.add(l) }
+  for (let i = 0; i < 3; i++) { const l = new THREE.Mesh(new THREE.IcosahedronGeometry(.85 - i * .12, 0), leafMats[(i + Math.floor(x)) & 3]); l.position.set((rnd() - .5) * .5, 1.6 + i * .55, (rnd() - .5) * .5); l.castShadow = true; g.add(l) }
 }
-tree(-7.6, -3.5, 1.2); tree(7.8, -9.3, 1.4); tree(1.6, -9.6, 1.1); tree(-8.2, -10, 1.0); tree(8.2, -1.2, .9);
-for (let x = -8.8; x <= 8.8; x += 1.1) part(scene, M.house, .12, 1.0, .12, x, .5, -10.85);
-part(scene, M.house, 17.8, .1, .08, 0, .85, -10.85); part(scene, M.house, 17.8, .1, .08, 0, .45, -10.85);
+function fenceLine(x0, z0, x1, z1) {
+  const L = Math.hypot(x1 - x0, z1 - z0), n = Math.ceil(L / 1.2);
+  for (let i = 0; i <= n; i++) { const u = i / n; part(scene, M.fence, .1, .9, .1, lerp(x0, x1, u), .45, lerp(z0, z1, u)) }
+  for (const y of [.35, .75]) { const r = mk(M.fence); r.scale.set(Math.abs(x1 - x0) + .08 || .06, .07, Math.abs(z1 - z0) + .08 || .06); r.position.set((x0 + x1) / 2, y, (z0 + z1) / 2) }
+}
+house(-1.5, -16, 9, 6, 3.6, 0xf6efe4, 0xc8553d);
+const patio = mk(M.patio); setB(patio, -6, 3, 0, .06, -12.6, -10);
+fenceLine(-10, -1, -10, -21); fenceLine(10, -1, 10, -21); fenceLine(-10, -21, 10, -21);
+const WALLS = [0xf3e3c3, 0xdfe8f0, 0xf1d6d0, 0xe2ecd9, 0xf5f0e6, 0xe8dcc8], ROOFS = [0xc8553d, 0x6d4c41, 0x3e5c76, 0xa0522d, 0x8b3a3a];
+for (const [x, z] of [[-21, -14], [21, -13], [-36, -15], [36, -14]]) { house(x, z, 8, 6, rnd() < .5 ? 3.4 : 5.4, WALLS[(rnd() * 6) | 0], ROOFS[(rnd() * 5) | 0]); tree(x + (rnd() < .5 ? -5 : 5), z + 6, 1 + rnd() * .4) }
+fenceLine(-31, -1, -31, -21); fenceLine(31, -1, 31, -21); fenceLine(-31, -21, 31, -21);
+const road = mk(M.asphalt, scene, false); setB(road, -150, 150, 0, .03, -30, -24);
+const walk1 = mk(M.walk, scene, false); setB(walk1, -150, 150, 0, .06, -24, -22); const walk2 = mk(M.walk, scene, false); setB(walk2, -150, 150, 0, .06, -32, -30);
+for (let x = -60; x <= 60; x += 13) { house(x + rnd() * 3, -38.5, 8, 6, rnd() < .5 ? 3.4 : 5.4, WALLS[(rnd() * 6) | 0], ROOFS[(rnd() * 5) | 0]); tree(x + 6.5, -33.5, 1.1 + rnd() * .5) }
+for (let x = -70; x <= 70; x += 14) house(x + rnd() * 4, -54, 9, 7, 3.4 + rnd() * 4, WALLS[(rnd() * 6) | 0], ROOFS[(rnd() * 5) | 0]);
+for (let x = -84; x <= 84; x += 12) tree(x + rnd() * 4, -66 - rnd() * 8, 1.6 + rnd());
+for (let x = -45; x <= 45; x += 9) { if (Math.abs(x) > 12) tree(x, -22.8, 1 + rnd() * .5); part(scene, M.dark, .1, 3, .1, x + 4.5, 1.5, -23.2) }
+tree(-7.8, -4, 1.3); tree(8.3, -8.5, 1.5); tree(-8.4, -18.5, 1.2); tree(7.5, -19.5, 1.1);
+const cars = [];
+for (let i = 0; i < 4; i++) { const g = new THREE.Group(); scene.add(g); const col = [0xd63b3b, 0x3b7bd6, 0xf2f2f2, 0x2f2f33][i];
+  part(g, std({ color: col, roughness: .4, metalness: .2 }), 3.6, .7, 1.7, 0, .55, 0); part(g, std({ color: col, roughness: .4 }), 2, .6, 1.5, -.2, 1.15, 0); part(g, M.glass, 2.02, .45, 1.52, -.2, 1.15, 0);
+  for (const x of [-1.2, 1.2]) for (const z of [-.85, .85]) { const w = cyl(g, M.dark, .35, .25, x, .35, z, 12); w.rotation.x = Math.PI / 2 }
+  g.userData = { x0: -80 + i * 47, v: i % 2 ? -5.5 : 6.5, z: i % 2 ? -25.5 : -28.5 }; if (i % 2) g.rotation.y = Math.PI; cars.push(g) }
 const clouds = [];
-for (let i = 0; i < 5; i++) {
-  const g = new THREE.Group(); for (let k = 0; k < 4; k++) { const b = new THREE.Mesh(new THREE.IcosahedronGeometry(.9 + rnd() * .6, 1), M.cloud); b.position.set(k * 1.1 - 1.6, rnd() * .4, rnd() * .6); g.add(b) }
-  g.userData = { x: -18 + i * 9, y: 8 + rnd() * 3, z: -16 - rnd() * 6, v: .25 + rnd() * .2 }; scene.add(g); clouds.push(g);
-}
-
-// ---------- ölçüm: kazıklar, ip, boya ----------
-const corners = [[-3.25, -3.25], [3.25, -3.25], [3.25, 0], [-3.25, 0]];
-const stakes = corners.map(() => { const m = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .9, 6), M.trunk); m.castShadow = true; scene.add(m); return m });
-const ropes = [0, 1, 2, 3].map(() => mk(M.rope)); const paints = [0, 1, 2, 3].map(() => mk(M.paint, scene, false));
+for (let i = 0; i < 7; i++) { const g = new THREE.Group(); for (let k = 0; k < 4; k++) { const b = new THREE.Mesh(new THREE.IcosahedronGeometry(1.6 + rnd(), 1), M.cloud); b.position.set(k * 2 - 3, rnd() * .6, rnd()); g.add(b) }
+  g.userData = { x: -90 + i * 28, y: 22 + rnd() * 6, z: -70 - rnd() * 30, v: .6 + rnd() * .4 }; scene.add(g); clouds.push(g) }
 
 // ---------- kepçe ----------
 const exc = new THREE.Group(); scene.add(exc);
-part(exc, M.dark, 2.7, .55, 1.9, 0, .28, 0); part(exc, M.yel, 2.0, .85, 1.55, -.25, .98, 0);
-part(exc, M.yel, .95, .95, .95, .35, 1.85, -.28); part(exc, M.glass, .06, .55, .75, .84, 1.95, -.28);
+part(exc, M.dark, 2.7, .55, 1.9, 0, .28, 0); part(exc, M.yel, 2.0, .85, 1.55, -.25, .98, 0); part(exc, M.yel, .95, .95, .95, .35, 1.85, -.28); part(exc, M.glass, .06, .55, .75, .84, 1.95, -.28);
 const boom = new THREE.Group(); boom.position.set(.75, 1.35, .38); exc.add(boom); part(boom, M.yel, 2.7, .34, .34, 1.35, 0, 0);
 const stick = new THREE.Group(); stick.position.set(2.7, 0, 0); boom.add(stick); part(stick, M.yel, .3, 2.0, .3, 0, -1.0, 0);
 const bucket = new THREE.Group(); bucket.position.set(0, -2.0, 0); stick.add(bucket); part(bucket, M.dark, .8, .55, .7, .2, -.1, 0);
 const pile = new THREE.Mesh(new THREE.ConeGeometry(1, 1, 18), M.soil); pile.castShadow = true; scene.add(pile);
 
-// ---------- çakıl, demir, boru ----------
+// ---------- çöken kenarlar ----------
+const CH = [[-2.6, -1.0, 1.1, .8, .9], [-1.3, -2.75, 1.3, .8, .7], [.6, -2.8, 1.2, .9, .7], [2.6, -2.0, .9, .8, 1.1], [2.0, -.7, .8, .7, .9], [-.4, -2.9, .9, .7, .6]];
+const chunks = CH.map(() => mk(M.soil));
+
+// ---------- çakıl, demir, beton ----------
 const gravel = mk(M.gravel);
 const rebarSegs = [];
 for (let x = -3.1; x <= 3.11; x += .35) rebarSegs.push([[x, -1.74, -3.15], [x, -1.74, -.02]]);
 for (let z = -3.1; z <= -.1; z += .35) rebarSegs.push([[-3.15, -1.72, z], [3.15, -1.72, z]]);
 for (let x = -3.0; x <= 3.01; x += .4) rebarSegs.push([[x, -1.74, -3.12], [x, -.1, -3.12]]);
 for (let y = -1.5; y <= -.2; y += .4) rebarSegs.push([[-3.12, y, -3.12], [3.12, y, -3.12]]);
-for (const sx of [-3.12, 3.12]) {
-  for (let z = -3.0; z <= -.05; z += .4) rebarSegs.push([[sx, -1.74, z], [sx, -.1, z]]);
-  for (let y = -1.5; y <= -.2; y += .4) rebarSegs.push([[sx, y, -3.12], [sx, y, -.02]]);
-}
+for (const sx of [-3.12, 3.12]) { for (let z = -3.0; z <= -.05; z += .4) rebarSegs.push([[sx, -1.74, z], [sx, -.1, z]]); for (let y = -1.5; y <= -.2; y += .4) rebarSegs.push([[sx, y, -3.12], [sx, y, -.02]]) }
 const rebar = new THREE.InstancedMesh(new THREE.CylinderGeometry(.03, .03, 1, 5), M.rebar, rebarSegs.length); rebar.castShadow = true; scene.add(rebar);
-{ const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
-  rebarSegs.forEach(([a, b], i) => { const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), d = B.clone().sub(A); q.setFromUnitVectors(up, d.clone().normalize());
-    m.compose(A.clone().add(B).multiplyScalar(.5), q, new THREE.Vector3(1, d.length(), 1)); rebar.setMatrixAt(i, m) }) }
-const pipeDef = [[[0, -1.92, -1.8], [3.12, -1.92, -1.8]], [[3.12, -1.92, -1.8], [3.12, .08, -1.8]], [[3.12, .08, -1.8], [5.0, .08, -1.8]], [[-2.2, -1.0, -3.12], [-2.2, .08, -3.12]], [[-2.2, .08, -3.12], [-2.2, .08, -3.9]], [[-2.2, .08, -3.9], [5.0, .08, -3.9]], [[5.0, .08, -3.9], [5.0, .08, -2.2]]];
-const pipeLen = pipeDef.map(([a, b]) => Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2])); const pipeTot = pipeLen.reduce((a, b) => a + b);
-const pipes = pipeDef.map(() => { const m = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, 1, 10), M.pipe); m.castShadow = true; scene.add(m); return m });
-const drain = new THREE.Mesh(new THREE.CylinderGeometry(.25, .25, .05, 16), M.dark); drain.position.set(0, -1.58, -1.8); scene.add(drain);
-const filt = new THREE.Group(); filt.position.set(5.5, 0, -2.0); scene.add(filt);
-part(filt, M.dark, 1.2, .2, 1.2, 0, .1, 0); const tank = new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, 1.1, 18), M.filter); tank.position.set(0, .75, 0); tank.castShadow = true; filt.add(tank);
-
-// ---------- beton & mikser ----------
+{ const m = new THREE.Matrix4(), q = new THREE.Quaternion(); rebarSegs.forEach(([a, b], i) => { const A = V(...a), B = V(...b), d = B.clone().sub(A); q.setFromUnitVectors(V(0, 1, 0), d.clone().normalize()); m.compose(A.clone().add(B).multiplyScalar(.5), q, V(1, d.length(), 1)); rebar.setMatrixAt(i, m) }) }
 const cFloor = mk(M.conc), cBack = mk(M.conc), cLeft = mk(M.conc), cRight = mk(M.conc);
 const truck = new THREE.Group(); scene.add(truck);
 part(truck, M.dark, 5.2, .4, 1.9, 0, .7, 0); part(truck, M.orange, 1.5, 1.6, 1.9, -2.0, 1.6, 0); part(truck, M.glass, .05, .7, 1.6, -2.76, 1.9, 0);
-for (const x of [-1.9, .6, 1.8]) for (const z of [-1, 1]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(.45, .45, .35, 14), M.dark); w.rotation.x = Math.PI / 2; w.position.set(x, .45, z * .95); truck.add(w) }
+for (const x of [-1.9, .6, 1.8]) for (const z of [-1, 1]) { const w = cyl(truck, M.dark, .45, .35, x, .45, z * .95, 14); w.rotation.x = Math.PI / 2 }
 const drum = new THREE.Mesh(new THREE.CylinderGeometry(.85, 1.05, 3.0, 20), M.drum); drum.rotation.z = Math.PI / 2 - .25; drum.position.set(1.0, 2.0, 0); drum.castShadow = true; truck.add(drum);
 truck.rotation.y = Math.PI;
 
@@ -198,176 +185,253 @@ const tFloor = new THREE.Mesh(plane, tileFloor); tFloor.rotation.x = -Math.PI / 
 const tBack = new THREE.Mesh(plane, tileBack); tBack.receiveShadow = true; scene.add(tBack);
 const tLeft = new THREE.Mesh(plane, tileSide); tLeft.rotation.y = Math.PI / 2; tLeft.receiveShadow = true; scene.add(tLeft);
 const tRight = new THREE.Mesh(plane, tileSide); tRight.rotation.y = -Math.PI / 2; tRight.receiveShadow = true; scene.add(tRight);
-const steps = [0, 1, 2].map(() => mk(M.white));
-const coping = [0, 1, 2].map(() => mk(M.stone));
-const deck = []; for (let i = 0; i < 8; i++) deck.push(mk(M.wood));
-const umb = new THREE.Group(); umb.position.set(6.2, 0, -2.4); scene.add(umb);
-{ const p = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, 2.4, 8), M.house); p.position.y = 1.2; umb.add(p);
-  const c = new THREE.Mesh(new THREE.ConeGeometry(1.5, .6, 8, 1, true), new THREE.MeshStandardMaterial({ map: tex(256, 64, stripeImg), side: THREE.DoubleSide, roughness: .7 })); c.position.y = 2.4; c.castShadow = true; umb.add(c) }
-const lounger = [0, 1].map(i => { const g = new THREE.Group(); g.position.set(4.4 + i * 1.3, 0, -1.0); scene.add(g); part(g, M.white, .7, .12, 1.8, 0, .35, 0); const b = part(g, M.white, .7, .12, .8, 0, .62, -.82); b.rotation.x = .9; return g });
-const lamps = [[-3.8, -3.9], [3.8, -3.9], [-3.8, -0.4]].map(([x, z]) => { const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g); part(g, M.dark, .08, 1.1, .08, 0, .55, 0);
-  const bulb = new THREE.Mesh(new THREE.SphereGeometry(.16, 12, 8), new THREE.MeshStandardMaterial({ color: 0xfff2c0, emissive: 0xffc860, emissiveIntensity: 0 })); bulb.position.y = 1.2; g.add(bulb);
-  const L = new THREE.PointLight(0xffc070, 0, 6); L.position.y = 1.3; g.add(L); return { bulb, L } });
+const steps = [0, 1, 2].map(() => mk(M.white)); const coping = [0, 1, 2].map(() => mk(M.stone));
+const deck = []; for (let i = 0; i < 6; i++) deck.push(mk(M.wood));
+const umb = new THREE.Group(); umb.position.set(-6.0, 0, -2.6); scene.add(umb);
+cyl(umb, M.fence, .05, 2.4, 0, 1.2, 0, 8); { const c = new THREE.Mesh(new THREE.ConeGeometry(1.5, .6, 8, 1, true), std({ map: tex(256, 64, stripeImg), side: THREE.DoubleSide, roughness: .7 })); c.position.y = 2.4; c.castShadow = true; umb.add(c) }
+const lounger = [0, 1].map(i => { const g = new THREE.Group(); g.position.set(-6.8 + i * 1.4, 0, -.9); scene.add(g); part(g, M.white, .7, .12, 1.8, 0, .35, 0); const b = part(g, M.white, .7, .12, .8, 0, .62, -.82); b.rotation.x = .9; return g });
+const lamps = [[-3.9, -3.9], [3.9, -3.9], [-3.9, -.4], [3.9, -.4]].map(([x, z]) => { const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g); part(g, M.dark, .08, 1.1, .08, 0, .55, 0);
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(.16, 12, 8), std({ color: 0xfff2c0, emissive: 0xffc860, emissiveIntensity: 0 })); bulb.position.y = 1.2; g.add(bulb);
+  const L = new THREE.PointLight(0xffc070, 0, 7); L.position.y = 1.3; g.add(L); return { g, bulb, L } });
+
+// ---------- tesisat ekipmanı ----------
+const pad = mk(M.conc);
+const pump = new THREE.Group(); pump.position.set(5.0, .1, -1.5); scene.add(pump);
+{ const b = cyl(pump, M.blue, .28, .7, 0, .3, 0, 16); b.rotation.z = Math.PI / 2; part(pump, M.grey, .5, .25, .5, -.35, .12, 0); cyl(pump, M.grey, .12, .3, .35, .55, 0, 10) }
+const sandf = new THREE.Group(); sandf.position.set(6.5, .1, -1.6); scene.add(sandf);
+cyl(sandf, M.blue, .48, 1.2, 0, .6, 0, 20); { const d = new THREE.Mesh(new THREE.SphereGeometry(.48, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), M.blue); d.position.y = 1.2; d.castShadow = true; sandf.add(d); cyl(sandf, M.grey, .12, .25, 0, 1.75, 0, 10) }
+const chlor = new THREE.Group(); chlor.position.set(5.2, .1, -3.1); scene.add(chlor);
+part(chlor, M.white, .45, .7, .35, 0, .35, 0); cyl(chlor, std({ color: 0xffe066, roughness: .4 }), .12, .3, 0, .85, 0, 10);
+const hp = new THREE.Group(); hp.position.set(7.0, .1, -3.3); scene.add(hp);
+part(hp, M.grey, 1.4, 1.0, .65, 0, .5, 0); { const ring = cyl(hp, M.dark, .36, .05, .25, .55, .34, 20); ring.rotation.x = Math.PI / 2 }
+const fan = new THREE.Group(); fan.position.set(.25, .55, .38); hp.add(fan); for (let i = 0; i < 3; i++) { const b = part(fan, M.white, .08, .6, .02, 0, 0, 0); b.rotation.z = i * Math.PI / 3 }
+const skimmer = mk(M.white); const skimHole = mk(M.dark, scene, false);
+const drainG = new THREE.Mesh(new THREE.CylinderGeometry(.25, .25, .04, 16), M.dark); drainG.position.set(0, -1.58, -1.8); scene.add(drainG);
+const inlets = [-1.5, 1.5].map(x => { const m = cyl(scene, M.white, .07, .12, x, -.45, -2.98, 10); m.rotation.x = Math.PI / 2; return m });
+const poolL = [-1.6, 1.6].map(x => { const L = new THREE.PointLight(0x55f0ff, 0, 9); L.position.set(x, -1.0, -2.7); scene.add(L);
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(.18, 16), std({ color: 0xffffff, emissive: 0x88ffff, emissiveIntensity: 0 })); disc.position.set(x, -1.0, -2.985); scene.add(disc); return { L, disc } });
+
+// ---------- borular (x-ray) & akış ----------
+const PATHS = {
+  drain: [[0, -1.6, -1.8], [0, -1.97, -1.8], [3.45, -1.97, -1.8], [3.45, .12, -1.8], [4.7, .12, -1.5]],
+  skim: [[3.15, -.25, -2.6], [3.45, -.25, -2.6], [3.45, .12, -1.8]],
+  pf: [[5.35, .4, -1.5], [6.0, .4, -1.5], [6.0, .3, -1.6], [6.05, .3, -1.6]],
+  ret: [[6.5, .25, -2.1], [6.5, -.45, -3.6], [-1.5, -.45, -3.6], [-1.5, -.45, -3.0]],
+  ret2: [[1.5, -.45, -3.6], [1.5, -.45, -3.0]],
+};
+const xrDirty = new THREE.MeshBasicMaterial({ color: 0xff9f43, transparent: true, opacity: .9, depthTest: false });
+const xrClean = new THREE.MeshBasicMaterial({ color: 0x4fd8ff, transparent: true, opacity: .9, depthTest: false });
+function polyLen(p) { let L = 0; for (let i = 1; i < p.length; i++) L += Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1], p[i][2] - p[i - 1][2]); return L }
+function polyAt(p, s) { for (let i = 1; i < p.length; i++) { const a = p[i - 1], b = p[i], l = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]); if (s <= l) { const u = s / l; return [lerp(a[0], b[0], u), lerp(a[1], b[1], u), lerp(a[2], b[2], u)] } s -= l } return p[p.length - 1] }
+const pipeMeshes = [];
+for (const [k, p] of Object.entries(PATHS)) { const mat = (k === 'ret' || k === 'ret2') ? xrClean : xrDirty;
+  for (let i = 1; i < p.length; i++) { const A = V(...p[i - 1]), B = V(...p[i]), d = B.clone().sub(A), m = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, 1, 10), mat);
+    m.quaternion.setFromUnitVectors(V(0, 1, 0), d.clone().normalize()); m.userData = { A, d: d.clone().normalize(), L: d.length() }; m.renderOrder = 20; scene.add(m); pipeMeshes.push(m) } }
+const NF = 70, flow = new THREE.InstancedMesh(new THREE.SphereGeometry(.06, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, transparent: true }), NF); flow.renderOrder = 21; scene.add(flow);
+const flowDef = []; for (let i = 0; i < NF; i++) { const keys = ['drain', 'drain', 'skim', 'pf', 'ret', 'ret', 'ret2']; flowDef.push({ k: keys[i % keys.length], o: rnd() }) }
+
+// ---------- yapraklar & mikroplar ----------
+const NL = 34, leaves = new THREE.InstancedMesh(new THREE.PlaneGeometry(.32, .2), std({ side: THREE.DoubleSide, roughness: .8 }), NL); scene.add(leaves);
+const leafD = []; for (let i = 0; i < NL; i++) { leafD.push({ x: -2.7 + rnd() * 5.4, z: -2.8 + rnd() * 2.6, h: 3 + rnd() * 3, f: rnd(), r: rnd() * 6, s: rnd() }); leaves.setColorAt(i, C([0xd98b2b, 0xc9a227, 0x7aa53a, 0xa0522d][i % 4])) }
+const NM = 28, microbes = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.14, 1), std({ color: 0x9dff6a, emissive: 0x6fe040, emissiveIntensity: 1.4, roughness: .5 }), NM); scene.add(microbes);
+const micD = []; for (let i = 0; i < NM; i++) micD.push({ x: -2.6 + rnd() * 5.2, y: -1.45 + rnd() * 1.2, z: -2.7 + rnd() * 2.5, p: rnd() * 6 });
+const dummy = new THREE.Object3D();
 
 // ---------- su ----------
 const waterMat = new THREE.MeshPhysicalMaterial({ color: 0x1fa8e0, transparent: true, opacity: .62, roughness: .06, clearcoat: 1, depthWrite: false, emissive: 0x00d0ff, emissiveIntensity: 0 });
-const water = new THREE.Mesh(unit, waterMat); scene.add(water);
-const surfGeo = new THREE.PlaneGeometry(6, 3, 48, 24); surfGeo.rotateX(-Math.PI / 2);
-const surfBase = surfGeo.attributes.position.array.slice();
-const surf = new THREE.Mesh(surfGeo, new THREE.MeshPhysicalMaterial({ color: 0x7fe6ff, transparent: true, opacity: .55, roughness: .02, clearcoat: 1, depthWrite: false, emissive: 0x30e0ff, emissiveIntensity: 0 })); scene.add(surf);
-const stream = new THREE.Mesh(new THREE.CylinderGeometry(.07, .09, 1, 10), new THREE.MeshStandardMaterial({ color: 0x8fe4ff, transparent: true, opacity: .8, roughness: .05 })); scene.add(stream);
-const hose = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, 1, 8), new THREE.MeshStandardMaterial({ color: 0x1e9e4a, roughness: .5 })); scene.add(hose);
-const ring = new THREE.Mesh(new THREE.TorusGeometry(.3, .03, 6, 24), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: .7 })); ring.rotation.x = Math.PI / 2; scene.add(ring);
-const poolL = [-1.6, 1.6].map(x => { const L = new THREE.PointLight(0x55f0ff, 0, 9); L.position.set(x, -1.0, -2.7); scene.add(L);
-  const disc = new THREE.Mesh(new THREE.CircleGeometry(.18, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x88ffff, emissiveIntensity: 0 })); disc.position.set(x, -1.0, -2.99); scene.add(disc); return { L, disc } });
+const water = new THREE.Mesh(unit, waterMat); water.renderOrder = 5; scene.add(water);
+const surfGeo = new THREE.PlaneGeometry(1, 1, 48, 24); surfGeo.rotateX(-Math.PI / 2); const surfBase = surfGeo.attributes.position.array.slice();
+const surfMat = new THREE.MeshPhysicalMaterial({ color: 0x7fe6ff, transparent: true, opacity: .5, roughness: .02, clearcoat: 1, depthWrite: false, emissive: 0x30e0ff, emissiveIntensity: 0 });
+const surf = new THREE.Mesh(surfGeo, surfMat); surf.renderOrder = 6; scene.add(surf);
+const stream = new THREE.Mesh(new THREE.CylinderGeometry(.07, .09, 1, 10), std({ color: 0x8fe4ff, transparent: true, opacity: .8, roughness: .05 })); scene.add(stream);
+const hose = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, 1, 8), std({ color: 0x1e9e4a, roughness: .5 })); scene.add(hose);
+const ring = new THREE.Mesh(new THREE.TorusGeometry(.3, .03, 6, 24), std({ color: 0xffffff, transparent: true, opacity: .7 })); ring.rotation.x = Math.PI / 2; scene.add(ring);
+const W = { mud1: [C('#8a7a45'), .62], mud: [C('#6b5232'), .8], clean: [C('#1fa8e0'), .6], green: [C('#5d8f2f'), .85], dull: [C('#3a9ec4'), .68], spark: [C('#22b8f2'), .55] };
+function mixW(a, b, u) { return [W[a][0].clone().lerp(W[b][0], u), lerp(W[a][1], W[b][1], u)] }
+function waterState() {
+  const swC = S.chlor.sw;
+  if (T < S.fill1.s + .3) return null;
+  if (T < S.conc.s) { if (inSeg('fill1')) return { bare: 1, lvl: -2 + 1.6 * sm(P('fill1', .08, .85)), cs: [W.mud1[0], W.mud1[1]], clar: 40 };
+    return { bare: 1, lvl: -.4 - 1.15 * sm(P('leak', .08, .9)), cs: mixW('mud1', 'mud', sm(P('leak', 0, .5))), clar: 10 } }
+  if (inSeg('conc')) { const u = sm(P('conc', 0, .12)); return u < .99 ? { bare: 1, lvl: lerp(-1.55, -2, u), cs: [W.mud[0], W.mud[1]], clar: 10 } : null }
+  if (inSeg('tile')) { const u = sm(P('tile', .45, .95)); return u > .01 ? { lvl: -1.6 + 1.45 * u, cs: [W.clean[0], W.clean[1]], clar: 100 } : null }
+  const L = -.15;
+  if (inSeg('dirty')) { const u = sm(P('dirty', .2, .9)); return { lvl: L, cs: mixW('clean', 'green', u), clar: Math.round(100 - 80 * u) } }
+  if (inSeg('filter')) { const u = sm(P('filter', .5, .98)); return { lvl: L, cs: mixW('green', 'dull', u), clar: Math.round(20 + 65 * u) } }
+  if (inSeg('chlor')) { const u = sm(At(swC + .8, 1.4)); return { lvl: L, cs: mixW('dull', 'spark', u), clar: Math.round(85 + 15 * u) } }
+  return { lvl: L, cs: [W.spark[0], W.spark[1]], clar: 100 };
+}
 
 // ---------- kamera ----------
-const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const SHOTS = {
-  hook: [[V(12, 11, 21), V(0, -.4, -3.5)], [V(8.5, 9, 17.5), V(0, -.6, -3)]],
-  mark: [[V(0, 15.5, 6.5), V(0, 0, -1.7)], [V(1.8, 14.5, 6.2), V(0, 0, -1.7)]],
-  dig: [[V(-3, 6.5, 13), V(-.8, -.9, -1.6)], [V(2, 5.8, 12.5), V(0, -1.1, -1.6)]],
-  base: [[V(2, 4.2, 10.5), V(0, -1.4, -1.7)], [V(-1.5, 4.6, 10.8), V(0, -1.4, -1.7)]],
-  pipe: [[V(5, 4.5, 10.5), V(1.8, -1.0, -2.0)], [V(6.5, 6, 11), V(2.6, -.6, -2.2)]],
-  pour: [[V(-1, 6, 13), V(0, -1.0, -1.7)], [V(-3, 5.5, 12.5), V(0, -1.0, -1.7)]],
-  cure: [[V(9, 9, 16), V(0, -.8, -2.5)], [V(-9, 9, 16), V(0, -.8, -2.5)]],
-  tile: [[V(-1.5, 4.8, 11), V(0, -1.0, -1.7)], [V(2, 5.2, 11.5), V(0, -1.0, -1.7)]],
-  fill: [[V(0, 5, 12.5), V(0, -.9, -1.7)], [V(.5, 6, 13.5), V(0, -.8, -1.7)]],
+  hook: [[V(22, 30, 46), V(0, 0, -14)], [V(8, 8.8, 16), V(0, -.8, -2.6)]],
+  dig: [[V(-3, 6.5, 13), V(-.5, -1, -1.6)], [V(2.5, 6, 12.5), V(0, -1.1, -1.6)]],
+  fill1: [[V(0, 5.5, 12.5), V(0, -1.2, -1.6)], [V(1.2, 5, 12), V(0, -1.2, -1.6)]],
+  leak: [[V(-2, 4.6, 11.5), V(0, -1.3, -1.6)], [V(1.8, 4.2, 11), V(0, -1.3, -1.6)]],
+  conc: [[V(2, 5, 11.5), V(0, -1.2, -1.7)], [V(-2, 5, 11.5), V(0, -1.2, -1.7)]],
+  tile: [[V(-1.5, 5, 11.5), V(0, -1, -1.7)], [V(1.5, 5.3, 12), V(0, -1, -1.7)]],
+  dirty: [[V(0, 7.5, 12), V(0, -.6, -1.8)], [V(.6, 9, 11), V(0, -.6, -1.8)]],
+  filter: [[V(5, 6, 14), V(2.8, -.7, -2.2)], [V(7.5, 7, 14.5), V(3.2, -.6, -2.2)]],
+  chlor: [[V(4, 5.5, 13), V(1.8, -.9, -2.1)], [V(-.5, 6, 13), V(1.5, -.9, -2.1)]],
+  night: [[V(0, 6, 13.5), V(3.0, -.8, -2.4)], [V(6, 6.5, 13.5), V(3.2, -.8, -2.4)]],
 };
-const ORDER = TL.segs.map(s => s.id);
+const ZOOM = { hook: 1, dirty: .82, filter: .97, chlor: .9, night: .92 };
 function shotPose(id, t) {
-  if (id === 'reveal') { const u = clamp((t - S.reveal.s) / (S.reveal.e - S.reveal.s)); const th = lerp(.55, -.75, sm(u)); const tg = V(.8, -.6, -2.4);
-    return [tg.clone().add(V(Math.sin(th) * 14, lerp(6.5, 8, u), Math.cos(th) * 14)), tg] }
-  const [A, B] = SHOTS[id]; const u = sm((t - S[id].s) / (S[id].e - S[id].s));
-  const g = A[1].clone().lerp(B[1], u), p = A[0].clone().lerp(B[0], u);
-  const z = { hook: 1, cure: .9, mark: .85 }[id] || .78;
-  return [g.clone().add(p.sub(g).multiplyScalar(z)), g];
+  if (id === 'reveal') { const u = clamp((t - S.reveal.s) / (S.reveal.e - S.reveal.s)); const th = lerp(.5, -.8, sm(u)); const tg = V(.8, -.6, -2.4); return [tg.clone().add(V(Math.sin(th) * 14, lerp(6.5, 8, u), Math.cos(th) * 14)), tg] }
+  const [A, B] = SHOTS[id]; const u = sm((t - S[id].s) / (S[id].e - S[id].s)); const g = A[1].clone().lerp(B[1], u), p = A[0].clone().lerp(B[0], u);
+  return [g.clone().add(p.sub(g).multiplyScalar(ZOOM[id] || .78)), g];
 }
 function camAt(t) {
-  const i = Math.max(0, ORDER.findIndex(id => t >= S[id].s && t < S[id].e)); const id = ORDER[i < 0 ? ORDER.length - 1 : i];
-  let [p, g] = shotPose(id, t);
-  const k = (t - S[id].s) / .9;
+  let i = ORDER.findIndex(id => t >= S[id].s && t < S[id].e); if (i < 0) i = ORDER.length - 1; const id = ORDER[i];
+  let [p, g] = shotPose(id, t); const k = (t - S[id].s) / .9;
   if (i > 0 && k < 1) { const [pp, pg] = shotPose(ORDER[i - 1], S[ORDER[i - 1]].e - 1e-3); const u = sm(k); p = pp.lerp(p, u); g = pg.lerp(g, u) }
   cam.position.copy(p); cam.lookAt(g);
 }
 
-// ---------- gökyüzü & ışık ----------
-const C = h => new THREE.Color(h);
-const SKY = { day: [C('#4c9ff0'), C('#d4ecff')], night: [C('#070b24'), C('#1b2550')], dusk: [C('#2d2466'), C('#ff9d63')] };
-function setSky(top, bot) { document.getElementById('sky').style.background = `linear-gradient(${top.getStyle()},${bot.getStyle()})` }
+// ---------- ışık ----------
+const SKY = { day: [C('#4c9ff0'), C('#d4ecff')], dusk: [C('#22265a'), C('#ff9a5e')] };
 function lightAt() {
-  let top = SKY.day[0].clone(), bot = SKY.day[1].clone(), sunI = 2.8, hemiI = 1.0, ang = .6;
-  if (T >= S.cure.s && T < S.cure.e) {
-    const d = P('cure', .05, .95) * 7, ph = d % 1, c = Math.cos(ph * Math.PI * 2), day = clamp(c * 1.6 + .35);
-    top = SKY.night[0].clone().lerp(SKY.day[0], day); bot = SKY.night[1].clone().lerp(SKY.day[1], day);
-    sunI = 2.8 * day + .05; hemiI = .25 + .75 * day; ang = ph * Math.PI * 2 + .6;
-  }
-  if (T >= S.reveal.s) { const u = sm(P('reveal', 0, .45)); top = top.lerp(SKY.dusk[0], u); bot = bot.lerp(SKY.dusk[1], u); sunI = lerp(2.8, 1.1, u); hemiI = lerp(1, .45, u); ang = lerp(.6, 1.25, u); sun.color.set(C('#ffffff').lerp(C('#ffb070'), u)) }
-  else sun.color.set(0xffffff);
-  setSky(top, bot); sun.intensity = sunI; hemi.intensity = hemiI;
-  sun.position.set(Math.sin(ang) * 14, Math.cos(ang) * 16 + 2, 9); sun.target.position.set(0, 0, -3);
+  let u = after('night') ? sm(P('night', 0, .25)) : 0;
+  const top = SKY.day[0].clone().lerp(SKY.dusk[0], u), bot = SKY.day[1].clone().lerp(SKY.dusk[1], u);
+  document.getElementById('sky').style.background = `linear-gradient(${top.getStyle()} 0%,${bot.getStyle()} 62%)`;
+  scene.fog.color.copy(bot); sun.intensity = lerp(2.8, .9, u); hemi.intensity = lerp(1, .35, u); sun.color.copy(C('#ffffff').lerp(C('#ffa060'), u));
+  const ang = lerp(.6, 1.3, u); sun.position.set(Math.sin(ang) * 22 + 2, Math.cos(ang) * 26 + 3, 12); sun.target.position.set(0, 0, -6);
+  R.toneMappingExposure = lerp(1.05, 1.15, u);
 }
 
 // ---------- HUD ----------
-const STAGE = { mark: ['GÜN 1', 'ÖLÇÜM'], dig: ['GÜN', 'KAZI'], base: ['GÜN', 'ÇAKIL + DEMİR'], pipe: ['GÜN 6', 'TESİSAT'], pour: ['GÜN', 'BETON'], cure: ['GÜN', 'KURUMA'], tile: ['GÜN', 'SERAMİK'], fill: ['GÜN 21', 'SU'], reveal: ['GÜN 21', 'BİTTİ! 🎉'] };
-const DAYR = { dig: [2, 3], base: [4, 5], pour: [7, 10], cure: [11, 17], tile: [18, 20] };
 const $ = id => document.getElementById(id);
-function hud() {
-  const id = ORDER.find(i => inSeg(i)) || 'reveal'; const h = $('hud');
-  if (id === 'hook') { h.style.opacity = 0; } else {
-    h.style.opacity = 1; const st = STAGE[id]; let day = st[0];
-    if (DAYR[id]) { const [a, b] = DAYR[id]; const prog = id === 'cure' ? P('cure', .05, .95) * 7 / 7 : P(id, .1, .9); day = 'GÜN ' + Math.min(b, a + Math.floor(prog * (b - a + 1))) }
-    $('day').textContent = day; $('stage').textContent = st[1];
-    const k = eb((T - S[id].s) / .35); h.style.transform = `scale(${.75 + .25 * k})`;
+function phaseInfo() {
+  const id = ORDER.find(i => inSeg(i)) || 'reveal';
+  const sw = S[id].sw, pre = sw && T < sw;
+  const MAP = { hook: null, dig: ['', 'ADIM 1', 'KAZI', S.dig.s], fill1: ['', 'ADIM 2', 'SUYU DOLDUR', S.fill1.s], leak: ['bad', 'SORUN 1', 'SIZINTI + ÇÖKME', S.leak.s],
+    conc: ['good', 'ÇÖZÜM', 'BETON KABUK', S.conc.s], tile: ['', 'ADIM 3', 'SERAMİK + SU', S.tile.s], dirty: ['bad', 'SORUN 2', 'KİRLİ SU', S.dirty.s],
+    filter: ['good', 'ÇÖZÜM', 'FİLTRE SİSTEMİ', S.filter.s], chlor: pre ? ['bad', 'SORUN 3', 'MİKROPLAR', S.chlor.s] : ['good', 'ÇÖZÜM', 'KLOR ÜNİTESİ', sw],
+    night: pre ? ['bad', 'SORUN 4', 'SOĞUK + KARANLIK', S.night.s] : ['good', 'ÇÖZÜM', 'ISI POMPASI + IŞIK', sw], reveal: ['gold', 'SONUÇ', 'GERÇEK HAVUZ', S.reveal.s] };
+  return [id, MAP[id]];
+}
+function hud(ws) {
+  const [id, m] = phaseInfo(); const h = $('hud');
+  if (!m) h.style.opacity = 0; else {
+    h.style.opacity = 1; $('pill').className = m[0]; $('tag').textContent = m[1]; $('stage').textContent = m[2];
+    h.style.transform = `scale(${.72 + .28 * eb((T - m[3]) / .35)})`;
     let sub = '';
-    if (id === 'dig') sub = `Derinlik: ${(2.0 * sm(P('dig', .12, .95))).toFixed(1).replace('.', ',')} m`;
-    if (id === 'pour') sub = `Beton: ${Math.round(11 * (sm(P('pour', .05, .45)) * .48 + sm(P('pour', .35, .95)) * .52))} m³`;
-    if (id === 'fill') sub = `Su: ${Math.round(29 * sm(P('fill', .05, .95)))} ton`;
-    if (id === 'base') sub = `Çelik çubuk: ${Math.floor(rebarSegs.length * P('base', .3, .9))}`;
+    if (id === 'dig') sub = `Derinlik: ${(2 * sm(P('dig', .12, .95))).toFixed(1).replace('.', ',')} m`;
+    if (id === 'fill1') sub = `Su: ${Math.round(39 * sm(P('fill1', .08, .85)))} ton`;
+    if (id === 'leak') sub = `Su: ${Math.round(39 - 28 * sm(P('leak', .08, .9)))} ton ↓`;
+    if (id === 'conc') sub = `Beton: ${Math.round(11 * sm(P('conc', .55, .97)))} m³`;
+    if (['tile', 'dirty', 'filter', 'chlor'].includes(id) && ws) sub = `Berraklık: %${ws.clar}`;
+    if (id === 'dirty') sub = '1 hafta sonra · ' + sub;
+    if (id === 'night') sub = `Su sıcaklığı: ${Math.round(T < S.night.sw ? 19 : 19 + 9 * sm(At(S.night.sw, 3)))}°C`;
     $('sub').textContent = sub; $('sub').style.opacity = sub ? 1 : 0;
   }
   const seg = TL.segs.find(s => T >= s.s && T < s.e) || TL.segs[TL.segs.length - 1];
-  let ch = null; for (const c of seg.chunks) if (T >= c.t) ch = c;
-  const cap = $('cap');
-  if (ch && T < seg.v + seg.vd + .25) { cap.innerHTML = ch.text.replace(/\*([^*]+)\*/g, '<b>$1</b>').replace(/\*/g, ''); cap.style.opacity = 1; cap.style.transform = `scale(${.72 + .28 * eb((T - ch.t) / .16)})` }
-  else cap.style.opacity = 0;
+  let ch = null, nx = null; seg.chunks.forEach((c, i) => { if (T >= c.t) { ch = c; nx = seg.chunks[i + 1] } });
+  const end = nx ? nx.t : seg.v + seg.vd + .3; const cap = $('cap');
+  if (ch && T < end) { cap.innerHTML = ch.text.replace(/\*([^*]+)\*/g, '<b>$1</b>').replace(/\*/g, ''); cap.style.opacity = 1; cap.style.transform = `scale(${.72 + .28 * eb((T - ch.t) / .14)})` } else cap.style.opacity = 0;
 }
-const tmpV = new THREE.Vector3();
-function label(el, show, pos, txt) {
-  if (!show) { el.style.opacity = 0; return } tmpV.set(...pos).project(cam);
-  el.style.left = ((tmpV.x + 1) / 2 * 1080) + 'px'; el.style.top = ((1 - tmpV.y) / 2 * 1920) + 'px'; el.textContent = txt; el.style.opacity = 1;
+const labPool = []; const tmpV = new THREE.Vector3();
+function labels(list) {
+  while (labPool.length < list.length) { const d = document.createElement('div'); d.className = 'lab'; $('labs').appendChild(d); labPool.push(d) }
+  labPool.forEach((d, i) => { const L = list[i]; if (!L) { d.style.opacity = 0; return } tmpV.set(...L.p).project(cam);
+    d.style.left = ((tmpV.x + 1) / 2 * 1080) + 'px'; d.style.top = ((1 - tmpV.y) / 2 * 1920) + 'px'; d.textContent = L.t; d.style.opacity = L.a; d.style.transform = `translate(-50%,-130%) scale(${.6 + .4 * L.a})` });
 }
 
-// ---------- sahne durumu ----------
+// ---------- kare ----------
 window.renderAt = function (t) {
   T = t;
-  // bulutlar
-  for (const c of clouds) { const u = c.userData; c.position.set(((u.x + t * u.v + 22) % 44) - 22, u.y, u.z) }
-  // ölçüm
-  const mk1 = P('mark', .05, .35), mk2 = P('mark', .3, .8), gone = T >= S.dig.s + .3;
-  stakes.forEach((s, i) => { const [x, z] = corners[i]; const d = eb((mk1 * 4 - i) / 1.0); s.visible = !gone && d > 0; s.position.set(x, .45 + (1 - d) * 4, z) });
-  corners.forEach((c, i) => { const n = corners[(i + 1) % 4]; const u = sm(mk2 * 4 - i); const x1 = lerp(c[0], n[0], u), z1 = lerp(c[1], n[1], u);
-    const show = !gone && u > 0; const x0 = Math.min(c[0], x1) - .03, xx1 = Math.max(c[0], x1) + .03, z0 = Math.min(c[1], z1) - .03, zz1 = Math.max(c[1], z1) + .03;
-    if (show) { setB(ropes[i], x0, xx1, .55, .61, z0, zz1); setB(paints[i], x0 - .05, xx1 + .05, .001, .02, z0 - .05, zz1 + .05) } else { ropes[i].visible = paints[i].visible = false } });
+  for (const c of clouds) { const u = c.userData; c.position.set(((u.x + t * u.v + 110) % 220) - 110, u.y, u.z) }
+  for (const c of cars) { const u = c.userData; c.position.set(((u.x0 + t * u.v + 3000) % 180) - 90, 0, u.z) }
   // kazı
   const dig = 2.0 * sm(P('dig', .12, .95));
-  setB(fill, -3.25, 3.25, -2.0, -dig, -3.25, 0);
-  fill.material[2] = dig > .01 ? M.soil : fillTopGrass;
-  fillFront.map.repeat.set(6.5 / 3, (2.0 - dig) / 3.2); fillFront.map.offset.set(0, (-2.0 - GY0) / 3.2);
-  const exIn = eo(P('dig', 0, .12)), exOut = sm(P('base', 0, .3));
-  exc.visible = T >= S.dig.s && T < S.base.e; exc.position.set(lerp(14, .6, exIn) + 14 * exOut, 0, -6.1);
-  const active = T > S.dig.s + .7 && T < S.dig.e - .2; const c = active ? Math.cos(2 * Math.PI * (T - (S.dig.s + .9)) / 1.6) : -1; const w = (1 - c) / 2;
+  setB(fill, -3.25, 3.25, -2.0, -dig, -3.25, 0); fill.material[2] = dig > .01 ? M.soil : fillTopGrass;
+  fillFront.map.repeat.set(6.5 / 3, (2.0 - dig) / 12); fillFront.map.offset.set(0, (-2.0 - GY0) / 12);
+  const exIn = eo(P('dig', 0, .12)), exOut = sm(P('fill1', 0, .3));
+  exc.visible = after('dig') && T < S.fill1.e; exc.position.set(lerp(14, .6, exIn) + 14 * exOut, 0, -6.1);
+  const active = T > S.dig.s + .7 && T < S.dig.e - .2; const cc = active ? Math.cos(2 * Math.PI * (T - (S.dig.s + .9)) / 1.6) : -1, w = (1 - cc) / 2;
   boom.rotation.z = lerp(lerp(-.05, -.42, dig / 2), .45, w); stick.rotation.z = lerp(-.15, -.75, w); bucket.rotation.z = lerp(.2, -.9, w);
   exc.rotation.y = -Math.PI / 2 + (active ? Math.sin(2 * Math.PI * (T - S.dig.s) / 3.2) * .25 : 0);
-  const ph = 1.9 * sm(P('dig', .15, 1)) * (1 - sm(P('base', .1, .5))); pile.visible = ph > .02; pile.scale.set(ph * 1.3, ph, ph * 1.3); pile.position.set(5.6, ph / 2, -6.4);
-  // çakıl & demir
-  setB(gravel, -3.25, 3.25, -2.0, -2.0 + .15 * sm(P('base', 0, .35)), -3.25, 0);
-  rebar.count = T >= S.base.s ? Math.floor(rebarSegs.length * P('base', .3, .9)) : 0;
-  // boru
-  let L = pipeTot * (T >= S.pipe.s ? sm(P('pipe', .08, .7)) : 0);
-  pipeDef.forEach(([a, b], i) => { const m = pipes[i]; const len = Math.min(pipeLen[i], L); L -= pipeLen[i]; if (len <= .01) { m.visible = false; return } m.visible = true;
-    const A = V(...a), B = V(...b), d = B.clone().sub(A).normalize(); m.quaternion.setFromUnitVectors(V(0, 1, 0), d); m.scale.set(1, len, 1); m.position.copy(A.clone().addScaledVector(d, len / 2)) });
-  drain.visible = T >= S.pipe.s + .5;
-  const fp = eb(P('pipe', .7, .85)); filt.visible = fp > .01; filt.scale.setScalar(Math.max(.01, fp));
-  // beton
-  const pf = sm(P('pour', .05, .45)), pw = sm(P('pour', .35, .95)), wy = -1.85 + 1.85 * pw;
-  setB(cFloor, -3.25, 3.25, -1.85, -1.85 + .25 * pf, -3.25, 0);
-  setB(cBack, -3.25, 3.25, -1.85, wy, -3.25, -3); setB(cLeft, -3.25, -3, -1.85, wy, -3.25, 0); setB(cRight, 3, 3.25, -1.85, wy, -3.25, 0);
-  M.conc.color.set(C('#7f7f7a').lerp(C('#cfcfc8'), sm(P('cure', .05, .95))));
-  const tin = eo(P('pour', 0, .16)), tout = sm(P('cure', 0, .35)); truck.visible = T >= S.pour.s && T < S.cure.e;
-  truck.position.set(lerp(19, 7.4, tin) + 13 * tout, 0, -5.6); drum.rotation.y = T * 3;
+  const ph = 1.9 * sm(P('dig', .15, 1)) * (1 - sm(P('conc', .0, .2))); pile.visible = ph > .02; pile.scale.set(ph * 1.3, ph, ph * 1.3); pile.position.set(5.6, ph / 2, -6.4);
+  // çöken kenarlar
+  chunks.forEach((m, i) => { const [x, z, sx, sy, sz] = CH[i]; const f = eo(P('leak', .42 + i * .07, .6 + i * .07)), gone = sm(P('conc', 0, .12));
+    const vis = after('leak') && gone < .99 && f > 0; m.visible = vis; if (!vis) return; const s = 1 - gone;
+    m.scale.set(sx * s, sy * s, sz * s); m.position.set(x * (1 - .15 * f), lerp(-sy / 2 + .02, -1.95 + sy / 2, f), z * (1 - .15 * f)); m.rotation.set(f * .5 * (i % 2 ? 1 : -1), 0, f * .7 * (i % 2 ? -1 : 1)) });
+  // çakıl, demir, beton
+  setB(gravel, -3.25, 3.25, -2.0, -2.0 + .15 * sm(P('conc', .12, .3)), -3.25, 0);
+  rebar.count = after('conc') ? Math.floor(rebarSegs.length * P('conc', .28, .55)) : 0;
+  const pf = sm(P('conc', .55, .7)), pw = sm(P('conc', .65, .97)), wy = -1.85 + 1.85 * pw;
+  setB(cFloor, -3.25, 3.25, -1.85, -1.85 + .25 * pf, -3.25, 0); setB(cBack, -3.25, 3.25, -1.85, wy, -3.25, -3); setB(cLeft, -3.25, -3, -1.85, wy, -3.25, 0); setB(cRight, 3, 3.25, -1.85, wy, -3.25, 0);
+  const tin = eo(P('conc', .45, .56)), tout = sm(P('tile', 0, .25)); truck.visible = T >= S.conc.s + .45 * (S.conc.e - S.conc.s) && T < S.tile.e;
+  truck.position.set(lerp(19, 7.4, tin) + 13 * tout, 0, -5.8); drum.rotation.y = T * 3;
   // seramik
-  const u1 = eo(P('tile', .0, .3)), u2 = eo(P('tile', .2, .45)), u3 = eo(P('tile', .35, .6));
+  const u1 = eo(P('tile', 0, .25)), u2 = eo(P('tile', .12, .35)), u3 = eo(P('tile', .22, .45));
   tFloor.visible = u1 > .01; tFloor.scale.set(6 * u1, 3, 1); tFloor.position.set(-3 + 3 * u1, -1.595, -1.5);
   tBack.visible = u2 > .01; tBack.scale.set(6, 1.6 * u2, 1); tBack.position.set(0, -1.6 + .8 * u2, -2.995);
   for (const [m, x] of [[tLeft, -2.995], [tRight, 2.995]]) { m.visible = u3 > .01; m.scale.set(3, 1.6 * u3, 1); m.position.set(x, -1.6 + .8 * u3, -1.5) }
-  steps.forEach((s, k) => { const u = eb(P('tile', .5 + k * .07, .6 + k * .07)); setB(s, -3, -3 + .45 * (3 - k), -1.6, -1.6 + (.42 * (k + 1)) * u, -1.3, 0) });
+  const nsw = S.night.sw;
+  steps.forEach((s, k) => { const u = eb(At(nsw + 1.6 + k * .2, .45)); setB(s, -3, -3 + .45 * (3 - k), -1.6, -1.6 + (.42 * (k + 1)) * u, -1.3, 0) });
   const cp = [[-3.5, 3.5, -3.55, -2.95], [-3.55, -2.95, -3.55, 0], [2.95, 3.55, -3.55, 0]];
-  coping.forEach((m, i) => { const u = eb(P('tile', .72 + i * .06, .84 + i * .06)); const [x0, x1, z0, z1] = cp[i]; const y = (1 - u) * 3; setB(m, x0, x1, y, y + .14, z0, z1); m.visible = u > .01 });
-  deck.forEach((m, i) => { const u = eb(P('fill', i * .05, .2 + i * .05)); const z0 = -4.2 + i * .5; setB(m, 3.7, 7.6, .0, .08 + (1 - u) * 0, z0, z0 + .44); m.visible = u > .05; m.position.y += (1 - u) * 2.5 });
+  coping.forEach((m, i) => { const u = eb(At(nsw + 2.4 + i * .25, .5)); const [x0, x1, z0, z1] = cp[i]; const y = (1 - u) * 3; setB(m, x0, x1, y, y + .14, z0, z1); m.visible = u > .01 });
+  deck.forEach((m, i) => { const u = eb(P('reveal', i * .03, .12 + i * .03)); const z0 = -4.2 + i * .62; setB(m, -8.2, -3.8, 0, .08, z0, z0 + .56); m.visible = u > .05; m.position.y += (1 - u) * 2.5 });
+  // ekipman
+  const popE = (g, u) => { g.visible = u > .01; g.scale.setScalar(Math.max(.01, u)) };
+  const pu = eb(P('filter', .02, .12)); pad.visible = pu > .01; setB(pad, 4.4, 7.9, 0, .1 * Math.max(.01, pu), -4.0, -.9);
+  popE(pump, eb(P('filter', .08, .2))); popE(sandf, eb(P('filter', .14, .26))); popE(chlor, eb(At(S.chlor.sw + .1, .4))); popE(hp, eb(At(nsw + .1, .4)));
+  fan.rotation.z = T * 14;
+  const sk = after('filter') && P('filter') > .12; skimmer.visible = skimHole.visible = sk; if (sk) { setB(skimmer, 2.9, 3.35, -.4, .05, -2.95, -2.25); setB(skimHole, 2.88, 2.92, -.3, -.12, -2.85, -2.35) }
+  drainG.visible = after('filter') && P('filter') > .1; inlets.forEach(m => m.visible = drainG.visible);
+  // borular & akış
+  const xr = (inSeg('filter') && P('filter') > .18) || (inSeg('chlor') && T < S.chlor.sw + 2.5);
+  const grow = sm(P('filter', .18, .45)), xa = inSeg('chlor') ? 1 - sm(At(S.chlor.sw + 1.5, 1)) : 1;
+  xrDirty.opacity = xrClean.opacity = .9 * xa;
+  pipeMeshes.forEach(m => { m.visible = xr && grow > .01; if (!m.visible) return; const L = m.userData.L * grow; m.scale.set(1, Math.max(.001, L), 1); m.position.copy(m.userData.A.clone().addScaledVector(m.userData.d, L / 2)) });
+  flow.visible = xr && P('filter') > .42; flow.material.opacity = xa;
+  if (flow.visible) { const cl = (inSeg('chlor') || P('filter') > .85) ? 1 : sm(P('filter', .45, .85));
+    flowDef.forEach((f, i) => { const p = PATHS[f.k], L = polyLen(p), s = ((f.o + T * .55 / L) % 1) * L; dummy.position.set(...polyAt(p, s)); dummy.scale.setScalar(1); dummy.updateMatrix(); flow.setMatrixAt(i, dummy.matrix);
+      const dirty = !(f.k === 'ret' || f.k === 'ret2'); flow.setColorAt(i, dirty ? C('#6b8f2a').lerp(C('#c9b78a'), cl * .3) : C('#e9fdff')) });
+    flow.instanceMatrix.needsUpdate = true; flow.instanceColor.needsUpdate = true }
   // su
-  const lvl = -1.6 + 1.45 * sm(P('fill', .05, .95)); const hasW = T >= S.fill.s + .2 && lvl > -1.585;
-  water.visible = hasW; if (hasW) setB(water, -2.99, 2.99, -1.598, lvl, -2.99, -.005);
-  surf.visible = hasW; if (hasW) { const a = surfGeo.attributes.position; for (let i = 0; i < a.count; i++) { const x = surfBase[i * 3], z = surfBase[i * 3 + 2]; a.array[i * 3 + 1] = Math.sin(x * 2.2 + T * 3) * .025 + Math.cos(z * 3 + T * 2.3) * .02 } a.needsUpdate = true; surfGeo.computeVertexNormals(); surf.position.set(0, lvl + .005, -1.5) }
-  const fl = inSeg('fill') && P('fill') > .03 && P('fill') < .95;
-  stream.visible = hose.visible = ring.visible = fl;
-  if (fl) { const top = .9; stream.scale.set(1, top - lvl, 1); stream.position.set(-2.4, (top + lvl) / 2, -.9); hose.scale.set(1, 1.4, 1); hose.rotation.z = Math.PI / 2 - .5; hose.position.set(-3.0, .55, -.9);
-    const r = .7 + ((T * 2) % 1) * .9; ring.scale.set(r, r, r); ring.position.set(-2.4, lvl + .03, -.9); ring.material.opacity = .8 * (1 - (T * 2) % 1) }
-  // final
-  const glow = sm(P('reveal', .15, .5));
-  waterMat.emissiveIntensity = glow * .35; surf.material.emissiveIntensity = glow * .25;
-  poolL.forEach(p => { p.L.intensity = glow * 25; p.disc.material.emissiveIntensity = glow * 3; p.disc.visible = T >= S.tile.s + 1 });
-  lamps.forEach(l => { l.bulb.material.emissiveIntensity = glow * 4; l.L.intensity = glow * 6 });
-  const ue = eb(P('reveal', .08, .3)); umb.visible = ue > .01; umb.scale.setScalar(Math.max(.01, ue));
-  lounger.forEach((g, i) => { const u = eb(P('reveal', .15 + i * .08, .35 + i * .08)); g.visible = u > .01; g.scale.setScalar(Math.max(.01, u)) });
-  lightAt(); camAt(t);
-  R.render(scene, cam);
-  hud();
-  label($('l1'), inSeg('mark') && P('mark') > .55, [0, .6, .2], '6 m');
-  label($('l2'), inSeg('mark') && P('mark') > .65, [3.9, .6, -1.6], '3 m');
-  label($('l3'), inSeg('dig') && P('dig') > .8, [3.75, -1.0, 0.1], '2 m ↕');
+  const ws = waterState();
+  water.visible = surf.visible = !!ws;
+  if (ws) { const b = ws.bare, x0 = b ? -3.24 : -2.99, x1 = -x0, z0 = b ? -3.24 : -2.99, y0 = b ? -1.99 : -1.598, lvl = Math.max(ws.lvl, y0 + .01);
+    setB(water, x0, x1, y0, lvl, z0, -.005); waterMat.color.copy(ws.cs[0]); waterMat.opacity = ws.cs[1];
+    surfMat.color.copy(ws.cs[0].clone().lerp(C('#ffffff'), .35)); surfMat.opacity = Math.min(.85, ws.cs[1] * .85);
+    const a = surfGeo.attributes.position; for (let i = 0; i < a.count; i++) { const x = surfBase[i * 3], z = surfBase[i * 3 + 2]; a.array[i * 3 + 1] = Math.sin(x * 13 + T * 3) * .025 + Math.cos(z * 9 + T * 2.3) * .02 } a.needsUpdate = true; surfGeo.computeVertexNormals();
+    surf.scale.set(x1 - x0, 1, -.005 - z0); surf.position.set(0, lvl + .005, (z0 - .005) / 2) }
+  const fl = (inSeg('fill1') && P('fill1') > .05 && P('fill1') < .88) || (inSeg('tile') && P('tile') > .45 && P('tile') < .96);
+  stream.visible = hose.visible = ring.visible = fl && !!ws;
+  if (fl && ws) { const top = .9, lv = ws.lvl; stream.scale.set(1, top - lv, 1); stream.position.set(-2.4, (top + lv) / 2, -.9); hose.scale.set(1, 1.4, 1); hose.rotation.z = Math.PI / 2 - .5; hose.position.set(-3.0, .55, -.9);
+    const r = .7 + ((T * 2) % 1) * .9; ring.scale.set(r, r, r); ring.position.set(-2.4, lv + .03, -.9); ring.material.opacity = .8 * (1 - (T * 2) % 1) }
+  // yapraklar
+  const lvlTop = -.15; leaves.visible = after('dirty') && T < S.chlor.s;
+  if (leaves.visible) { const skP = [3.0, lvlTop, -2.6];
+    leafD.forEach((d, i) => { const t0 = S.dirty.s + (.05 + .5 * d.f) * (S.dirty.e - S.dirty.s), fall = clamp((T - t0) / 1.4);
+      let x = d.x + Math.sin(T * 1.3 + d.r) * .25 * (1 - fall), z = d.z, y = lerp(lvlTop + d.h, lvlTop + .02, eo(fall)); let sc = fall > 0 ? 1 : 0;
+      if (fall >= 1) { x += Math.sin(T * .4 + d.r) * .15; z += Math.cos(T * .3 + d.r) * .1 }
+      const go = sm(P('filter', .5 + d.s * .25, .7 + d.s * .25)); x = lerp(x, skP[0], go); z = lerp(z, skP[2], go); sc *= 1 - sm((go - .85) / .15);
+      dummy.position.set(x, y, z); dummy.rotation.set(fall >= 1 ? -Math.PI / 2 : T * 3 + d.r, d.r, fall >= 1 ? 0 : T * 2); dummy.scale.setScalar(Math.max(.001, sc)); dummy.updateMatrix(); leaves.setMatrixAt(i, dummy.matrix) });
+    leaves.instanceMatrix.needsUpdate = true }
+  // mikroplar
+  microbes.visible = inSeg('chlor');
+  if (microbes.visible) { const appear = eb(P('chlor', 0, .12)), kill = sm(At(S.chlor.sw + .8, 1.2));
+    micD.forEach((d, i) => { const s = appear * (1 - clamp(kill * 1.4 - (i % 5) * .08)) ; dummy.position.set(d.x + Math.sin(T * 2 + d.p) * .12, d.y + Math.cos(T * 1.7 + d.p) * .08, d.z); dummy.rotation.set(T + d.p, T * .7, 0); dummy.scale.setScalar(Math.max(.001, s * (1 + .15 * Math.sin(T * 6 + d.p)))); dummy.updateMatrix(); microbes.setMatrixAt(i, dummy.matrix) });
+    microbes.instanceMatrix.needsUpdate = true }
+  // gece ışıkları
+  const glow = after('night') ? sm(At(nsw + 1.2, 1)) : 0;
+  waterMat.emissiveIntensity = glow * .4; surfMat.emissiveIntensity = glow * .3;
+  poolL.forEach(p => { p.L.intensity = glow * 26; p.disc.material.emissiveIntensity = glow * 3; p.disc.visible = after('tile') && P('tile') > .4 || after('dirty') });
+  lamps.forEach((l, i) => { const u = eb(At(nsw + 1.0 + i * .12, .4)); l.g.visible = u > .01; l.g.scale.setScalar(Math.max(.01, u)); l.bulb.material.emissiveIntensity = glow * 4; l.L.intensity = glow * 6 });
+  const ue = eb(P('reveal', .08, .25)); umb.visible = ue > .01; umb.scale.setScalar(Math.max(.01, ue));
+  lounger.forEach((g, i) => { const u = eb(P('reveal', .14 + i * .06, .3 + i * .06)); g.visible = u > .01; g.scale.setScalar(Math.max(.01, u)) });
+  lightAt(); camAt(t); R.render(scene, cam); hud(ws);
+  // etiketler
+  const L = [], la = (p, txt, t0, t1) => { const a = Math.min(sm((T - t0) / .3), sm((t1 - T) / .3)); if (a > .01) L.push({ p, t: txt, a }) };
+  const fs = S.filter.s, fd = S.filter.e - fs;
+  la([0, -1.5, -1.8], 'Dip süzgeci', fs + .14 * fd, S.filter.e - .2); la([3.1, .25, -2.6], 'Skimmer', fs + .2 * fd, S.filter.e - .2);
+  la([5.0, .9, -1.5], 'Pompa', fs + .25 * fd, S.filter.e - .2); la([6.5, 2.0, -1.6], 'Kum filtresi', fs + .32 * fd, S.filter.e - .2);
+  la([5.2, 1.25, -3.1], 'Klor ünitesi', S.chlor.sw + .3, S.chlor.e - .2); la([7.0, 1.4, -3.3], 'Isı pompası', nsw + .4, S.night.e - .3);
+  labels(L);
 };
-window.renderAt(0);
-window.ready = true;
+window.renderAt(0); window.ready = true;
 </script>
 </body></html>
