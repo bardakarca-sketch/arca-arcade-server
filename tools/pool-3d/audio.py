@@ -2,7 +2,9 @@
 import asyncio, json, os, re, subprocess, sys, wave
 import numpy as np
 
-HERE = os.path.dirname(os.path.abspath(__file__)); WORK = os.path.join(HERE, "work2"); os.makedirs(WORK, exist_ok=True)
+HERE = os.path.dirname(os.path.abspath(__file__))
+# TTS_DIR verilirse (ör. tools/voice/elevenlabs_tts.py çıktısı) o klasördeki <id>.mp3/<id>.json kullanılır
+WORK = os.environ.get("TTS_DIR") or os.path.join(HERE, "work2"); os.makedirs(WORK, exist_ok=True)
 FF = sys.argv[1]; SR = 44100; VOICE = "tr-TR-AhmetNeural"
 
 # id, metin (*vurgu*), sesten sonra bekleme, çözüm anını başlatan kelime

@@ -36,6 +36,7 @@ All four share: a one-second question, a recognizable place, something new every
 - Show it, don't just say it: labels on equipment, x-ray pipes with flowing particles, live counters (depth, tons, clarity %, °C).
 - Grounded setting (flat neighborhood with houses, street, cars) beats a floating diorama.
 - Captions must be word-synced to the voice: use TTS word boundaries or Whisper word timestamps, never proportional guesses.
+- Narration voice of choice: ElevenLabs British voices via `tools/voice/elevenlabs_tts.py` (default `george`; also `daniel`, `alice`, `lily`). Key from `ELEVENLABS_API_KEY` env secret only. It writes `<id>.mp3` + word timings; run `tools/pool-3d/audio.py` with `TTS_DIR=<that folder>` to reuse them. Target audience is likely US/English (higher payouts) — confirm with the user.
 - The user disliked all free TTS voices; prefer their own recorded narration (cut count-ins, denoise, loudness-normalize, align with faster-whisper; see `tools/pool-3d/audio_user.py`).
 
 ## Money and length
@@ -66,3 +67,4 @@ All four share: a one-second question, a recognizable place, something new every
 - `.claude/skills/moneyprinterturbo-video/` — stock-footage videos (Claude as LLM, Pexels key needed).
 - `tools/pool-3d/` — three.js cutaway renderer (scene `web/index.html`, `audio.py` for TTS, `audio_user.py` for the user's own voice, `capture.js` renders frames via headless Chromium + ffmpeg).
 - `tools/chat-video/` — phone-chat style renderer.
+- `tools/voice/elevenlabs_tts.py` — ElevenLabs narration with character-level timestamps → word timings.
