@@ -181,3 +181,13 @@ uv run --no-project --python 3.11 python mpt_agent.py --subject "<konu>" -- --vi
   Male voice alternative: `tr-TR-AhmetNeural-Male`. If the CLI rejects the voice name format, run `cli.py --help` once and use the format it expects.
 - Upstream officially supports macOS and Windows. In a Linux cloud session it may still work, but `uv` must be installed and the environment's network policy must allow GitHub, PyPI, Pexels and the chosen LLM provider. If a host is blocked, tell the user which one instead of retrying.
 - Never commit `config.toml` or any API key to this repository.
+
+## LLM Provider: Claude Only (arca-arcade-server)
+
+- Always use Anthropic Claude as the script LLM. Run the helper with:
+  `MPT_LLM_PROVIDER=anthropic MPT_LLM_API_KEY="$ANTHROPIC_API_KEY"` (model defaults to the provider default; set `MPT_LLM_MODEL_NAME` only if the user asks).
+- The key is read from the `ANTHROPIC_API_KEY` environment variable (cloud environment secret). Never ask the user to paste it into chat, never print it, never write it into the repository.
+- Do NOT use OpenAI/GPT, fal, or any other paid video/LLM provider, and never pass any `--confirm-*-charge` flag. If `ANTHROPIC_API_KEY` is missing, tell the user to add it as an environment secret and stop.
+- Stock footage still needs `PEXELS_API_KEY` (free) as an environment secret, passed as `MPT_PEXELS_API_KEY="$PEXELS_API_KEY"`. Without it, use `--video-source local` with self-made materials.
+- In this cloud container, if the first-time zip download returns 403, clone instead: `git clone --depth 1 https://github.com/harry0703/MoneyPrinterTurbo ~/MoneyPrinterTurbo`. If Edge TTS fails TLS, append `/root/.ccr/ca-bundle.crt` to the venv's `certifi` bundle.
+- Follow the `faceless-video-playbook` skill for idea selection, script structure and pre-publish checks.
